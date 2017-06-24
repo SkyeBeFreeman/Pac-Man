@@ -22,4 +22,10 @@ public:
 	// implement the "static create()" method manually
 	CREATE_FUNC(GameScene);
 
+private:
+	float visibleHeight;
+	float visibleWidth;
+	TextField * head_field;
+	TextField * body_field;
+
 };

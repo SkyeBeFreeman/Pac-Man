@@ -33,24 +33,18 @@ bool GameScene::init() {
 
 	Size visibleSize = Director::getInstance()->getVisibleSize();
 	Vec2 origin = Director::getInstance()->getVisibleOrigin();
+	visibleHeight = visibleSize.height;
+	visibleWidth = visibleSize.width;
 
-	auto label = Label::createWithTTF("Hello World", "fonts/Marker Felt.ttf", 24);
+	head_field = TextField::create("", "Arial", 15);
+	head_field->setPosition(Size(visibleWidth / 4, visibleHeight / 4 * 2));
+	head_field->setString(Global::loginHead);
+	this->addChild(head_field, 2);
 
-	// position the label on the center of the screen
-	label->setPosition(Vec2(origin.x + visibleSize.width / 2,
-		origin.y + visibleSize.height - label->getContentSize().height));
-
-	// add the label as a child to this layer
-	this->addChild(label, 1);
-
-	// add "HelloWorld" splash screen"
-	auto sprite = Sprite::create("HelloWorld.png");
-
-	// position the sprite on the center of the screen
-	sprite->setPosition(Vec2(visibleSize.width / 2 + origin.x, visibleSize.height / 2 + origin.y));
-
-	// add the sprite as a child to this layer
-	this->addChild(sprite, 0);
+	body_field = TextField::create("", "Arial", 20);
+	body_field->setPosition(Size(visibleWidth / 4 * 3, visibleHeight / 4 * 2));
+	body_field->setString(Global::loginBody);
+	this->addChild(body_field, 2);
 
 	return true;
 }

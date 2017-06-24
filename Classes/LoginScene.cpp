@@ -17,9 +17,6 @@ USING_NS_CC;
 
 using namespace cocostudio::timeline;
 
-#include "json/document.h"
-#include "json/writer.h"
-#include "json/stringbuffer.h"
 using namespace  rapidjson;
 
 #define database UserDefault::getInstance()
@@ -49,21 +46,25 @@ bool LoginScene::init() {
 	visibleHeight = size.height;
 	visibleWidth = size.width;
 
-	textField = TextField::create("Player Name", "Arial", 30);
-	textField->setPosition(Size(visibleWidth / 2, visibleHeight / 4 * 3));
-	this->addChild(textField, 2);
+	usernameField = TextField::create("Player Name", "Arial", 30);
+	usernameField->setPosition(Size(visibleWidth / 2, visibleHeight / 4 * 3));
+	this->addChild(usernameField, 2);
+
+	passwordField = TextField::create("Player Password", "Arial", 30);
+	passwordField->setPosition(Size(visibleWidth / 2, visibleHeight / 4 * 2));
+	this->addChild(passwordField, 2);
 
 	auto button = Button::create();
 	button->setTitleText("Login");
 	button->setTitleFontSize(30);
-	button->setPosition(Size(visibleWidth / 2, visibleHeight / 2));
+	button->setPosition(Size(visibleWidth / 3, visibleHeight / 4));
 	button->addClickEventListener(CC_CALLBACK_0(LoginScene::loginEvent, this));
 	this->addChild(button, 2);
 
 	auto autoButton = Button::create();
 	autoButton->setTitleText("Login Automatically");
 	autoButton->setTitleFontSize(30);
-	autoButton->setPosition(Size(visibleWidth / 2, visibleHeight / 2 - 50));
+	autoButton->setPosition(Size(visibleWidth / 3 * 2, visibleHeight / 4));
 	autoButton->addClickEventListener(CC_CALLBACK_0(LoginScene::autoLoginEvent, this));
 	this->addChild(autoButton, 2);
 
@@ -72,17 +73,18 @@ bool LoginScene::init() {
 
 // 登录事件函数
 void LoginScene::loginEvent() {
-	if (textField->getString() == "Player Name" || textField->getString() == "") {
+	if (usernameField->getString() == "Player Name" || usernameField->getString() == ""
+		|| passwordField->getString() == "Player Password" || passwordField->getString() == "") {
 		return;
 	}
 
 	HttpRequest* request = new HttpRequest();
-	request->setUrl("http://localhost:8080/login");
+	request->setUrl("http://localhost:11900/login");
 	request->setRequestType(HttpRequest::Type::POST);
 	request->setResponseCallback(CC_CALLBACK_2(LoginScene::onLoginHttpCompleted, this));
 
 	// 写入post请求数据
-	string tmp = "username=" + textField->getString();
+	string tmp = "username=" + usernameField->getString() + "&password=" + passwordField->getString();
 	const char* postData = tmp.c_str();
 	request->setRequestData(postData, strlen(postData));
 	request->setTag("POST test");
@@ -105,7 +107,8 @@ void LoginScene::onLoginHttpCompleted(HttpClient *sender, HttpResponse* response
 	// 获取sessionID和username并保存在本地文件中
 	Global::gameSessionId = Global::getSessionIdFromHeader(Global::toString(response->getResponseHeader()));
 	database->setStringForKey("sessionID", Global::gameSessionId);
-	database->setStringForKey("username", textField->getString());
+	database->setStringForKey("username", usernameField->getString());
+	database->setStringForKey("username", passwordField->getString());
 
 	std::vector<char>* headBuffer = response->getResponseHeader();
 	std::vector<char>* bodyBuffer = response->getResponseData();
