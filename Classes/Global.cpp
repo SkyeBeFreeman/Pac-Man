@@ -29,7 +29,7 @@ string Global::toString(vector<char> *buffer) {
 string Global::getSessionIdFromHeader(string head) {
 	regex nlp("\\r\\n");
 	string header = regex_replace(head, nlp, " ");
-	regex pattern(".*GAMESESSIONID=(.*) Content-Type.*");
+	regex pattern(".*SESSION=(.*) Content-Type.*");
 	//match_results<std::string::const_iterator> result;
 	cmatch result;
 	bool valid = regex_match(header.c_str(), result, pattern);

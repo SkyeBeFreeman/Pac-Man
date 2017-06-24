@@ -20,6 +20,10 @@ public:
 	// implement the "static create()" method manually
 	CREATE_FUNC(LoginScene);
 
+	void registEvent();
+
+	void onRegistHttpCompleted(HttpClient *sender, HttpResponse* response);
+
 	void loginEvent();
 
 	void onLoginHttpCompleted(HttpClient *sender, HttpResponse* response);
@@ -33,5 +37,7 @@ private:
 	float visibleWidth;
 	TextField * usernameField;
 	TextField * passwordField;
+	TextField * errorField;
+
 
 };

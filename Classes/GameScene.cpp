@@ -4,6 +4,7 @@
 #include "json/writer.h"
 #include "json/stringbuffer.h"
 #include <regex>
+#include "LoginScene.h"
 using std::regex;
 using std::match_results;
 using std::regex_match;
@@ -37,7 +38,7 @@ bool GameScene::init() {
 	visibleWidth = visibleSize.width;
 
 	head_field = TextField::create("", "Arial", 15);
-	head_field->setPosition(Size(visibleWidth / 4, visibleHeight / 4 * 2));
+	head_field->setPosition(Size(visibleWidth / 2, visibleHeight / 4 * 2));
 	head_field->setString(Global::loginHead);
 	this->addChild(head_field, 2);
 
@@ -46,5 +47,19 @@ bool GameScene::init() {
 	body_field->setString(Global::loginBody);
 	this->addChild(body_field, 2);
 
+	auto button = Button::create();
+	button->setTitleText("Logout");
+	button->setTitleFontSize(30);
+	button->setPosition(Size(visibleWidth / 3, visibleHeight / 4));
+	button->addClickEventListener(CC_CALLBACK_0(GameScene::logout, this));
+	this->addChild(button, 2);
+
 	return true;
 }
+
+void GameScene::logout()
+{
+	auto gameScene = LoginScene::createScene();
+	Director::getInstance()->replaceScene(gameScene);
+}
+

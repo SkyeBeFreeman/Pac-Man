@@ -22,6 +22,8 @@ public:
 	// implement the "static create()" method manually
 	CREATE_FUNC(GameScene);
 
+	void logout();
+
 private:
 	float visibleHeight;
 	float visibleWidth;

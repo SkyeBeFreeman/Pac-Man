@@ -47,29 +47,81 @@ bool LoginScene::init() {
 	visibleWidth = size.width;
 
 	usernameField = TextField::create("Player Name", "Arial", 30);
-	usernameField->setPosition(Size(visibleWidth / 2, visibleHeight / 4 * 3));
+	usernameField->setPosition(Size(visibleWidth / 2, visibleHeight / 6 * 5));
 	this->addChild(usernameField, 2);
 
 	passwordField = TextField::create("Player Password", "Arial", 30);
-	passwordField->setPosition(Size(visibleWidth / 2, visibleHeight / 4 * 2));
+	passwordField->setPosition(Size(visibleWidth / 2, visibleHeight / 6 * 4));
 	this->addChild(passwordField, 2);
 
-	auto button = Button::create();
-	button->setTitleText("Login");
-	button->setTitleFontSize(30);
-	button->setPosition(Size(visibleWidth / 3, visibleHeight / 4));
-	button->addClickEventListener(CC_CALLBACK_0(LoginScene::loginEvent, this));
-	this->addChild(button, 2);
+	errorField = TextField::create("", "Arial", 20);
+	errorField->setPosition(Size(visibleWidth / 2, visibleHeight / 6 * 3));
+	this->addChild(errorField, 2);
 
-	auto autoButton = Button::create();
-	autoButton->setTitleText("Login Automatically");
-	autoButton->setTitleFontSize(30);
-	autoButton->setPosition(Size(visibleWidth / 3 * 2, visibleHeight / 4));
-	autoButton->addClickEventListener(CC_CALLBACK_0(LoginScene::autoLoginEvent, this));
-	this->addChild(autoButton, 2);
+	auto registButton = Button::create();
+	registButton->setTitleText("Regist");
+	registButton->setTitleFontSize(30);
+	registButton->setPosition(Size(visibleWidth / 5 * 2, visibleHeight / 6 * 2));
+	registButton->addClickEventListener(CC_CALLBACK_0(LoginScene::registEvent, this));
+	this->addChild(registButton, 2);
+
+	auto loginButton = Button::create();
+	loginButton->setTitleText("Login");
+	loginButton->setTitleFontSize(30);
+	loginButton->setPosition(Size(visibleWidth / 5 * 3, visibleHeight / 6 * 2));
+	loginButton->addClickEventListener(CC_CALLBACK_0(LoginScene::loginEvent, this));
+	this->addChild(loginButton, 2);
+
+	auto autoLoginButton = Button::create();
+	autoLoginButton->setTitleText("Login Automatically");
+	autoLoginButton->setTitleFontSize(30);
+	autoLoginButton->setPosition(Size(visibleWidth / 2, visibleHeight / 6));
+	autoLoginButton->addClickEventListener(CC_CALLBACK_0(LoginScene::autoLoginEvent, this));
+	this->addChild(autoLoginButton, 2);
 
 	return true;
 }
+
+// 注册事件函数
+void LoginScene::registEvent() {
+	if (usernameField->getString() == "Player Name" || usernameField->getString() == ""
+		|| passwordField->getString() == "Player Password" || passwordField->getString() == "") {
+		return;
+	}
+
+	HttpRequest* request = new HttpRequest();
+	request->setUrl("http://localhost:11900/regist");
+	request->setRequestType(HttpRequest::Type::POST);
+	request->setResponseCallback(CC_CALLBACK_2(LoginScene::onRegistHttpCompleted, this));
+
+	// 写入post请求数据
+	string tmp = "username=" + usernameField->getString() + "&password=" + passwordField->getString();
+	const char* postData = tmp.c_str();
+	request->setRequestData(postData, strlen(postData));
+	request->setTag("POST test");
+	cocos2d::network::HttpClient::getInstance()->send(request);
+	request->release();
+
+	usernameField->setString("");
+	passwordField->setString("");
+
+}
+
+// 注册请求结束回调函数
+void LoginScene::onRegistHttpCompleted(HttpClient* sender, HttpResponse* response) {
+	if (!response) {
+		return;
+	}
+
+	std::vector<char>* headBuffer = response->getResponseHeader();
+	std::vector<char>* bodyBuffer = response->getResponseData();
+	Global::loginHead = string(Global::toString(headBuffer));
+	Global::loginBody = string(Global::toString(bodyBuffer));
+
+	errorField->setString(Global::loginBody);
+}
+
+
 
 // 登录事件函数
 void LoginScene::loginEvent() {
@@ -91,6 +143,8 @@ void LoginScene::loginEvent() {
 	cocos2d::network::HttpClient::getInstance()->send(request);
 	request->release();
 
+	usernameField->setString("");
+	passwordField->setString("");
 }
 
 // 登录请求结束回调函数
@@ -98,9 +152,14 @@ void LoginScene::onLoginHttpCompleted(HttpClient *sender, HttpResponse* response
 	if (!response) {
 		return;
 	}
+
+	std::vector<char>* headBuffer = response->getResponseHeader();
+	std::vector<char>* bodyBuffer = response->getResponseData();
+	Global::loginHead = string(Global::toString(headBuffer));
+	Global::loginBody = string(Global::toString(bodyBuffer));
+
 	if (!response->isSucceed()) {
-		log("response failed");
-		log("error buffer: %s", response->getErrorBuffer());
+		errorField->setString(Global::loginBody);
 		return;
 	}
 
@@ -108,12 +167,7 @@ void LoginScene::onLoginHttpCompleted(HttpClient *sender, HttpResponse* response
 	Global::gameSessionId = Global::getSessionIdFromHeader(Global::toString(response->getResponseHeader()));
 	database->setStringForKey("sessionID", Global::gameSessionId);
 	database->setStringForKey("username", usernameField->getString());
-	database->setStringForKey("username", passwordField->getString());
-
-	std::vector<char>* headBuffer = response->getResponseHeader();
-	std::vector<char>* bodyBuffer = response->getResponseData();
-	Global::loginHead = string(Global::toString(headBuffer));
-	Global::loginBody = string(Global::toString(bodyBuffer));
+	database->setStringForKey("password", passwordField->getString());
 
 	auto gameScene = GameScene::createScene();
 	Director::getInstance()->replaceScene(gameScene);
@@ -125,23 +179,26 @@ void LoginScene::autoLoginEvent() {
 		return;
 
 	HttpRequest* request = new HttpRequest();
-	request->setUrl("http://localhost:8080/login");
+	request->setUrl("http://localhost:11900/login");
 	request->setRequestType(HttpRequest::Type::POST);
 	request->setResponseCallback(CC_CALLBACK_2(LoginScene::onAutoLoginHttpCompleted, this));
 
 	// 写入POST请求数据
-	string tmp = "username=" + database->getStringForKey("username");
+	string tmp = "username=" + database->getStringForKey("username") + "&password=" + database->getStringForKey("password");
 	const char* postData = tmp.c_str();
 	request->setRequestData(postData, strlen(postData));
 	request->setTag("POST test");
 
 	// 写入POST请求头数据
 	vector<string> headers;
-	headers.push_back("Cookie: GAMESESSIONID=" + database->getStringForKey("sessionID"));
+	headers.push_back("Cookie: SESSION=" + database->getStringForKey("sessionID"));
 	request->setHeaders(headers);
 
 	cocos2d::network::HttpClient::getInstance()->send(request);
 	request->release();
+
+	usernameField->setString("");
+	passwordField->setString("");
 }
 
 // 自动登录请求结束回调函数
@@ -149,19 +206,19 @@ void LoginScene::onAutoLoginHttpCompleted(HttpClient *sender, HttpResponse* resp
 	if (!response) {
 		return;
 	}
+	
+	std::vector<char>* headBuffer = response->getResponseHeader();
+	std::vector<char>* bodyBuffer = response->getResponseData();
+	Global::loginHead = string(Global::toString(headBuffer));
+	Global::loginBody = string(Global::toString(bodyBuffer));
+
 	if (!response->isSucceed()) {
-		log("response failed");
-		log("error buffer: %s", response->getErrorBuffer());
+		errorField->setString(Global::loginBody);
 		return;
 	}
 
 	// 获取文件中的sessionID
 	Global::gameSessionId = database->getStringForKey("sessionID");
-
-	std::vector<char>* headBuffer = response->getResponseHeader();
-	std::vector<char>* bodyBuffer = response->getResponseData();
-	Global::loginHead = string(Global::toString(headBuffer));
-	Global::loginBody = string(Global::toString(bodyBuffer));
 
 	auto gameScene = GameScene::createScene();
 	Director::getInstance()->replaceScene(gameScene);
