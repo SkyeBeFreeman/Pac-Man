@@ -18,13 +18,13 @@
     <ClCompile Include="..\Classes\AppDelegate.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="Global.cpp">
+    <ClCompile Include="..\Classes\GameScene.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="LoginScene.cpp">
+    <ClCompile Include="..\Classes\Global.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="GameScene.cpp">
+    <ClCompile Include="..\Classes\LoginScene.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
@@ -35,13 +35,13 @@
     <ClInclude Include="..\Classes\AppDelegate.h">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="Global.h">
+    <ClInclude Include="..\Classes\GameScene.h">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="LoginScene.h">
+    <ClInclude Include="..\Classes\Global.h">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="GameScene.h">
+    <ClInclude Include="..\Classes\LoginScene.h">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>
