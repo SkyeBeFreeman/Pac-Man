@@ -102,9 +102,6 @@ void LoginScene::registEvent() {
 	cocos2d::network::HttpClient::getInstance()->send(request);
 	request->release();
 
-	usernameField->setString("");
-	passwordField->setString("");
-
 }
 
 // 注册请求结束回调函数
@@ -119,6 +116,9 @@ void LoginScene::onRegistHttpCompleted(HttpClient* sender, HttpResponse* respons
 	Global::loginBody = string(Global::toString(bodyBuffer));
 
 	errorField->setString(Global::loginBody);
+
+	usernameField->setString("");
+	passwordField->setString("");
 }
 
 
@@ -143,8 +143,6 @@ void LoginScene::loginEvent() {
 	cocos2d::network::HttpClient::getInstance()->send(request);
 	request->release();
 
-	usernameField->setString("");
-	passwordField->setString("");
 }
 
 // 登录请求结束回调函数
@@ -163,14 +161,16 @@ void LoginScene::onLoginHttpCompleted(HttpClient *sender, HttpResponse* response
 		return;
 	}
 
-	// 获取sessionID和username并保存在本地文件中
-	Global::gameSessionId = Global::getSessionIdFromHeader(Global::toString(response->getResponseHeader()));
-	database->setStringForKey("sessionID", Global::gameSessionId);
+	// 获取username和密码并保存在本地文件中
+	Global::username = usernameField->getString();
 	database->setStringForKey("username", usernameField->getString());
 	database->setStringForKey("password", passwordField->getString());
 
 	auto selectScene = SelectScene::createScene();
 	Director::getInstance()->replaceScene(selectScene);
+
+	usernameField->setString("");
+	passwordField->setString("");
 }
 
 // 自动登录事件函数
@@ -189,16 +189,9 @@ void LoginScene::autoLoginEvent() {
 	request->setRequestData(postData, strlen(postData));
 	request->setTag("POST test");
 
-	// 写入POST请求头数据
-	vector<string> headers;
-	headers.push_back("Cookie: SESSION=" + database->getStringForKey("sessionID"));
-	request->setHeaders(headers);
-
 	cocos2d::network::HttpClient::getInstance()->send(request);
 	request->release();
-
-	usernameField->setString("");
-	passwordField->setString("");
+	
 }
 
 // 自动登录请求结束回调函数
@@ -217,9 +210,12 @@ void LoginScene::onAutoLoginHttpCompleted(HttpClient *sender, HttpResponse* resp
 		return;
 	}
 
-	// 获取文件中的sessionID
-	Global::gameSessionId = database->getStringForKey("sessionID");
+	// 获取文件中的用户名
+	Global::username = database->getStringForKey("username");
 
 	auto selectScene = SelectScene::createScene();
 	Director::getInstance()->replaceScene(selectScene);
+
+	usernameField->setString("");
+	passwordField->setString("");
 }

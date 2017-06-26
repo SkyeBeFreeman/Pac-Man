@@ -6,7 +6,7 @@ using std::match_results;
 using std::regex_match;
 using std::cmatch;
 
-string Global::gameSessionId = "";
+string Global::username = "";
 long Global::score = 0;
 string Global::loginHead = "";
 string Global::loginBody = "";

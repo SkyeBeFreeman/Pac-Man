@@ -4,6 +4,8 @@
 #include "json/writer.h"
 #include "json/stringbuffer.h"
 #include <regex>
+#include <string>
+#include <sstream>
 using std::regex;
 using std::match_results;
 using std::regex_match;
@@ -36,23 +38,20 @@ bool RankScene::init() {
 	visibleWidth = size.width;
 
 	username_field = TextField::create("", "Arial", 30);
-	username_field->setPosition(Size(visibleWidth / 4 * 3, visibleHeight / 6 * 5));
+	username_field->setPosition(Size(visibleWidth / 4 * 3, visibleHeight / 10 * 9));
 	this->addChild(username_field, 2);
 
 	score_field = TextField::create("", "Arial", 30);
-	score_field->setPosition(Size(visibleWidth / 4 * 3, visibleHeight / 6 * 4));
+	score_field->setPosition(Size(visibleWidth / 4 * 3, visibleHeight / 10 * 8));
 	this->addChild(score_field, 2);
 
-	rank_field = TextField::create("", "Arial", 30);
-	rank_field->setPosition(Size(visibleWidth / 4 * 3, visibleHeight / 6 * 3));
-	this->addChild(rank_field, 2);
+	ranking_field = TextField::create("", "Arial", 30);
+	ranking_field->setPosition(Size(visibleWidth / 4 * 3, visibleHeight / 10 * 7));
+	this->addChild(ranking_field, 2);
 
-	rank_button = Button::create();
-	rank_button->setTitleText("Rank");
-	rank_button->setTitleFontSize(30);
-	rank_button->setPosition(Size(visibleWidth / 4, visibleHeight / 4));
-	rank_button->addClickEventListener(CC_CALLBACK_0(RankScene::rankEvent, this));
-	this->addChild(rank_button, 2);
+	rank_field = TextField::create("", "Arial", 30);
+	rank_field->setPosition(Size(visibleWidth / 4 * 3, visibleHeight / 10 * 6));
+	this->addChild(rank_field, 2);
 
 	head_field = TextField::create("", "Arial", 15);
 	head_field->setPosition(Size(visibleWidth / 4, visibleHeight / 4 * 3));
@@ -64,6 +63,8 @@ bool RankScene::init() {
 	body_field->setString(Global::loginBody);
 	this->addChild(body_field, 2);
 
+	rankEvent();
+
 	return true;
 }
 
@@ -73,15 +74,11 @@ void RankScene::rankEvent() {
 	HttpRequest* request = new HttpRequest();
 
 	// 发送GET请求即可
-	request->setUrl("http://localhost:11900/rank");
+	std::string url = "http://localhost:11900/rank/";
+	request->setUrl((url + Global::username).c_str());
 	request->setRequestType(HttpRequest::Type::GET);
 	request->setResponseCallback(CC_CALLBACK_2(RankScene::onRankHttpCompleted, this));
 	request->setTag("GET test");
-
-	// 写入GET请求头数据
-	vector<string> headers;
-	headers.push_back("Cookie: SESSION=" + Global::gameSessionId);
-	request->setHeaders(headers);
 
 	cocos2d::network::HttpClient::getInstance()->send(request);
 	request->release();
@@ -108,8 +105,22 @@ void RankScene::onRankHttpCompleted(HttpClient *sender, HttpResponse* response) 
 		log("GetParseError " + d.GetParseError());
 		return;
 	}
-	if (d.IsObject() && d.HasMember("info")) {
-		string temp = d["result"].GetString();
+	if (d.IsObject() && d.HasMember("username") && d.HasMember("maxscore") && d.HasMember("ranking") && d.HasMember("result")) {
+		username_field->setString(d["username"].GetString());
+		int maxscore = d["maxscore"].GetInt();
+		int ranking = d["ranking"].GetInt();
+		std::stringstream ss;
+		ss << maxscore;
+		string temp;
+		ss >> temp;
+		ss.clear();
+		ss.str("");
+		score_field->setString(temp);
+		ss << ranking;
+		ss >> temp;
+		ranking_field->setString(temp);
+		temp = "";
+		temp = d["result"].GetString();
 		string result = "";
 		for (int i = 1; i < temp.length(); i++) {
 			if (temp[i] == '|') {

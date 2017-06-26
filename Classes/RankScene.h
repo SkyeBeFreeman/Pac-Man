@@ -37,6 +37,7 @@ private:
     float visibleWidth;
 	TextField * username_field;
     TextField * score_field;
+	TextField * ranking_field;
     TextField * rank_field;
 	TextField * head_field;
 	TextField * body_field;

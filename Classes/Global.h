@@ -10,7 +10,7 @@ class Global {
 public:
 	Global();
 	~Global();
-	static string gameSessionId;
+	static string username;
 	static long score;
 	static string loginHead;
 	static string loginBody;

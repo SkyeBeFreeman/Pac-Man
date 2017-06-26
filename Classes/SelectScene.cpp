@@ -49,14 +49,14 @@ bool SelectScene::init() {
 	this->addChild(body_field, 2);
 
 	auto gameButton = Button::create();
-	gameButton->setTitleText("Logout");
+	gameButton->setTitleText("Start Game");
 	gameButton->setTitleFontSize(30);
 	gameButton->setPosition(Size(visibleWidth / 2, visibleHeight / 5 * 3));
 	gameButton->addClickEventListener(CC_CALLBACK_0(SelectScene::toGameScene, this));
 	this->addChild(gameButton, 2);
 
 	auto rankButton = Button::create();
-	rankButton->setTitleText("Logout");
+	rankButton->setTitleText("Rank");
 	rankButton->setTitleFontSize(30);
 	rankButton->setPosition(Size(visibleWidth / 2, visibleHeight / 5 * 2));
 	rankButton->addClickEventListener(CC_CALLBACK_0(SelectScene::toRankScene, this));
