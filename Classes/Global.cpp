@@ -26,6 +26,7 @@ string Global::toString(vector<char> *buffer) {
 	return rst;
 }
 
+// 正则表达式提取session
 string Global::getSessionIdFromHeader(string head) {
 	regex nlp("\\r\\n");
 	string header = regex_replace(head, nlp, " ");

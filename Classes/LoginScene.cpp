@@ -5,7 +5,7 @@
 #include "json/writer.h"
 #include "json/stringbuffer.h"
 #include "Global.h"
-#include "GameScene.h"
+#include "SelectScene.h"
 #include <regex>
 using std::to_string;
 using std::regex;
@@ -169,8 +169,8 @@ void LoginScene::onLoginHttpCompleted(HttpClient *sender, HttpResponse* response
 	database->setStringForKey("username", usernameField->getString());
 	database->setStringForKey("password", passwordField->getString());
 
-	auto gameScene = GameScene::createScene();
-	Director::getInstance()->replaceScene(gameScene);
+	auto selectScene = SelectScene::createScene();
+	Director::getInstance()->replaceScene(selectScene);
 }
 
 // 自动登录事件函数
@@ -220,6 +220,6 @@ void LoginScene::onAutoLoginHttpCompleted(HttpClient *sender, HttpResponse* resp
 	// 获取文件中的sessionID
 	Global::gameSessionId = database->getStringForKey("sessionID");
 
-	auto gameScene = GameScene::createScene();
-	Director::getInstance()->replaceScene(gameScene);
+	auto selectScene = SelectScene::createScene();
+	Director::getInstance()->replaceScene(selectScene);
 }
