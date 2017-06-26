@@ -11,7 +11,7 @@ public:
 	Global();
 	~Global();
 	static string username;
-	static long score;
+	static int maxscore;
 	static string loginHead;
 	static string loginBody;
 

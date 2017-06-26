@@ -165,9 +165,10 @@ void LoginScene::onLoginHttpCompleted(HttpClient *sender, HttpResponse* response
 
 	// 获取username和密码并保存在本地文件中
 	Global::username = usernameField->getString();
+	Global::maxscore = atoi(Global::loginBody.c_str());
 	database->setStringForKey("username", usernameField->getString());
 	database->setStringForKey("password", passwordField->getString());
-	database->setStringForKey("maxscore", Global::loginBody);
+	database->setIntegerForKey("maxscore", Global::maxscore);
 
 	auto selectScene = SelectScene::createScene();
 	Director::getInstance()->replaceScene(selectScene);
@@ -215,6 +216,7 @@ void LoginScene::onAutoLoginHttpCompleted(HttpClient *sender, HttpResponse* resp
 
 	// 获取文件中的用户名
 	Global::username = database->getStringForKey("username");
+	Global::maxscore = database->getIntegerForKey("maxscore");
 	database->setStringForKey("maxscore", Global::loginBody);
 
 	auto selectScene = SelectScene::createScene();

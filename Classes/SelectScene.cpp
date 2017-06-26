@@ -6,6 +6,7 @@
 #include <regex>
 #include "LoginScene.h"
 #include "RankScene.h"
+#include "GameScene.h"
 using std::regex;
 using std::match_results;
 using std::regex_match;
@@ -76,7 +77,8 @@ bool SelectScene::init() {
 
 // 跳转到游戏界面
 void SelectScene::toGameScene() {
-	//TODO
+	auto gameScene = GameScene::createScene();
+	Director::getInstance()->replaceScene(gameScene);
 }
 
 // 跳转到排名界面
@@ -90,4 +92,3 @@ void SelectScene::logout() {
 	auto loginScene = LoginScene::createScene();
 	Director::getInstance()->replaceScene(loginScene);
 }
-

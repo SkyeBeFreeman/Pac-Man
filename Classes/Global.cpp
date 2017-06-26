@@ -7,7 +7,7 @@ using std::regex_match;
 using std::cmatch;
 
 string Global::username = "";
-long Global::score = 0;
+int Global::maxscore = 0;
 string Global::loginHead = "";
 string Global::loginBody = "";
 
