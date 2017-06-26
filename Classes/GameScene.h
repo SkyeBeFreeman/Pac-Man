@@ -27,6 +27,7 @@ public:
 
 	void onSubmitHttpCompleted(HttpClient *sender, HttpResponse* response);
 
+	void quitEvent();
 
 private:
     float visibleHeight;

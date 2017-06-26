@@ -31,6 +31,8 @@ public:
 
 	void onRankHttpCompleted(HttpClient *sender, HttpResponse* response);
 
+	void quitEvent();
+
 
 private:
     float visibleHeight;

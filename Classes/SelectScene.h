@@ -31,7 +31,5 @@ public:
 private:
 	float visibleHeight;
 	float visibleWidth;
-	TextField * head_field;
-	TextField * body_field;
 
 };

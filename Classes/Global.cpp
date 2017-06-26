@@ -8,6 +8,7 @@ using std::cmatch;
 
 string Global::username = "";
 int Global::maxscore = 0;
+string Global::ip = "119.29.163.132";
 string Global::loginHead = "";
 string Global::loginBody = "";
 
@@ -24,19 +25,4 @@ string Global::toString(vector<char> *buffer) {
 		rst.push_back(ch);
 	}
 	return rst;
-}
-
-// 正则表达式提取session
-string Global::getSessionIdFromHeader(string head) {
-	regex nlp("\\r\\n");
-	string header = regex_replace(head, nlp, " ");
-	regex pattern(".*SESSION=(.*) Content-Type.*");
-	//match_results<std::string::const_iterator> result;
-	cmatch result;
-	bool valid = regex_match(header.c_str(), result, pattern);
-
-	if (!valid) {
-		return "";
-	}
-	return result[1];
 }

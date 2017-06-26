@@ -12,6 +12,7 @@ public:
 	~Global();
 	static string username;
 	static int maxscore;
+	static string ip;
 	static string loginHead;
 	static string loginBody;
 

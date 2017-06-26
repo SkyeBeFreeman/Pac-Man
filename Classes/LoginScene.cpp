@@ -92,7 +92,7 @@ void LoginScene::registEvent() {
 	}
 
 	HttpRequest* request = new HttpRequest();
-	request->setUrl("http://localhost:11900/regist");
+	request->setUrl((string() + "http://" + Global::ip + ":11900/regist").c_str());
 	request->setRequestType(HttpRequest::Type::POST);
 	request->setResponseCallback(CC_CALLBACK_2(LoginScene::onRegistHttpCompleted, this));
 
@@ -133,7 +133,7 @@ void LoginScene::loginEvent() {
 	}
 
 	HttpRequest* request = new HttpRequest();
-	request->setUrl("http://localhost:11900/login");
+	request->setUrl((string() + "http://" + Global::ip + ":11900/login").c_str());
 	request->setRequestType(HttpRequest::Type::POST);
 	request->setResponseCallback(CC_CALLBACK_2(LoginScene::onLoginHttpCompleted, this));
 
@@ -183,7 +183,7 @@ void LoginScene::autoLoginEvent() {
 		return;
 
 	HttpRequest* request = new HttpRequest();
-	request->setUrl("http://localhost:11900/login");
+	request->setUrl((string() + "http://" + Global::ip + ":11900/login").c_str());
 	request->setRequestType(HttpRequest::Type::POST);
 	request->setResponseCallback(CC_CALLBACK_2(LoginScene::onAutoLoginHttpCompleted, this));
 

@@ -7,7 +7,7 @@
 #include <string>
 #include <sstream>
 #include "RankScene.h"
-#include <iostream>
+#include "SelectScene.h"
 using std::regex;
 using std::match_results;
 using std::regex_match;
@@ -52,6 +52,13 @@ bool GameScene::init() {
 	submit_button->addClickEventListener(CC_CALLBACK_0(GameScene::submitEvent, this));
 	this->addChild(submit_button, 2);
 
+	auto quitButton = Button::create();
+	quitButton->setTitleText("<");
+	quitButton->setTitleFontSize(30);
+	quitButton->setPosition(Size(quitButton->getSize().width, visibleHeight - quitButton->getSize().height));
+	quitButton->addClickEventListener(CC_CALLBACK_0(GameScene::quitEvent, this));
+	this->addChild(quitButton, 2);
+
 	return true;
 }
 
@@ -63,7 +70,7 @@ void GameScene::submitEvent() {
 
 	if (atoi(score_field->getString().c_str()) > Global::maxscore) {
 		HttpRequest* request = new HttpRequest();
-		request->setUrl("http://localhost:11900/submit");
+		request->setUrl((string() + "http://" + Global::ip + ":11900/rank").c_str());
 		request->setRequestType(HttpRequest::Type::POST);
 		request->setResponseCallback(CC_CALLBACK_2(GameScene::onSubmitHttpCompleted, this));
 
@@ -76,7 +83,7 @@ void GameScene::submitEvent() {
 		cocos2d::network::HttpClient::getInstance()->send(request);
 		request->release();
 	} else {
-		std::cout << "不够高啊";
+		CCLOG("不够高啊");
 	}
 }
 
@@ -96,5 +103,11 @@ void GameScene::onSubmitHttpCompleted(HttpClient *sender, HttpResponse* response
 
 	auto rankScene = RankScene::createScene();
 	Director::getInstance()->replaceScene(rankScene);
+}
+
+// 退出点击事件
+void GameScene::quitEvent() {
+	auto selectScene = SelectScene::createScene();
+	Director::getInstance()->replaceScene(selectScene);
 }
 

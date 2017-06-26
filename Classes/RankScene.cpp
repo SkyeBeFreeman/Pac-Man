@@ -6,6 +6,7 @@
 #include <regex>
 #include <string>
 #include <sstream>
+#include "SelectScene.h"
 using std::regex;
 using std::match_results;
 using std::regex_match;
@@ -55,6 +56,13 @@ bool RankScene::init() {
 	rank_field->setPosition(Size(visibleWidth / 2, visibleHeight / 10 * 3));
 	this->addChild(rank_field, 2);
 
+	auto quitButton = Button::create();
+	quitButton->setTitleText("<");
+	quitButton->setTitleFontSize(30);
+	quitButton->setPosition(Size(quitButton->getSize().width, visibleHeight - quitButton->getSize().height));
+	quitButton->addClickEventListener(CC_CALLBACK_0(RankScene::quitEvent, this));
+	this->addChild(quitButton, 2);
+
 	rankEvent();
 
 	return true;
@@ -66,8 +74,7 @@ void RankScene::rankEvent() {
 	HttpRequest* request = new HttpRequest();
 
 	// 发送GET请求即可
-	std::string url = "http://localhost:11900/rank/";
-	request->setUrl((url + Global::username).c_str());
+	request->setUrl((string() + "http://" + Global::ip + ":11900/rank/" + Global::username).c_str());
 	request->setRequestType(HttpRequest::Type::GET);
 	request->setResponseCallback(CC_CALLBACK_2(RankScene::onRankHttpCompleted, this));
 	request->setTag("GET test");
@@ -122,4 +129,9 @@ void RankScene::onRankHttpCompleted(HttpClient *sender, HttpResponse* response) 
 	}
 }
 
+// 退出点击事件
+void RankScene::quitEvent() {
+	auto selectScene = SelectScene::createScene();
+	Director::getInstance()->replaceScene(selectScene);
+}
 
