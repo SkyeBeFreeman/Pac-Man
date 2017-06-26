@@ -15,6 +15,8 @@ using std::cmatch;
 using namespace rapidjson;
 USING_NS_CC;
 
+#pragma execution_character_set("UTF-8")
+
 using namespace cocostudio::timeline;
 
 using namespace  rapidjson;
@@ -165,6 +167,7 @@ void LoginScene::onLoginHttpCompleted(HttpClient *sender, HttpResponse* response
 	Global::username = usernameField->getString();
 	database->setStringForKey("username", usernameField->getString());
 	database->setStringForKey("password", passwordField->getString());
+	database->setStringForKey("maxscore", Global::loginBody);
 
 	auto selectScene = SelectScene::createScene();
 	Director::getInstance()->replaceScene(selectScene);
@@ -212,6 +215,7 @@ void LoginScene::onAutoLoginHttpCompleted(HttpClient *sender, HttpResponse* resp
 
 	// 获取文件中的用户名
 	Global::username = database->getStringForKey("username");
+	database->setStringForKey("maxscore", Global::loginBody);
 
 	auto selectScene = SelectScene::createScene();
 	Director::getInstance()->replaceScene(selectScene);

@@ -12,6 +12,8 @@ using std::regex_match;
 using std::cmatch;
 using namespace rapidjson;
 
+#pragma execution_character_set("UTF-8")
+
 USING_NS_CC;
 
 cocos2d::Scene* SelectScene::createScene() {

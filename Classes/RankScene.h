@@ -39,8 +39,6 @@ private:
     TextField * score_field;
 	TextField * ranking_field;
     TextField * rank_field;
-	TextField * head_field;
-	TextField * body_field;
     Button *submit_button;
     Button *rank_button;
 };

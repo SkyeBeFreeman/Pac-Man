@@ -12,6 +12,8 @@ using std::regex_match;
 using std::cmatch;
 using namespace rapidjson;
 
+#pragma execution_character_set("UTF-8")
+
 USING_NS_CC;
 
 cocos2d::Scene* RankScene::createScene() {
@@ -38,30 +40,20 @@ bool RankScene::init() {
 	visibleWidth = size.width;
 
 	username_field = TextField::create("", "Arial", 30);
-	username_field->setPosition(Size(visibleWidth / 4 * 3, visibleHeight / 10 * 9));
+	username_field->setPosition(Size(visibleWidth / 2, visibleHeight / 10 * 9));
 	this->addChild(username_field, 2);
 
 	score_field = TextField::create("", "Arial", 30);
-	score_field->setPosition(Size(visibleWidth / 4 * 3, visibleHeight / 10 * 8));
+	score_field->setPosition(Size(visibleWidth / 2, visibleHeight / 10 * 8));
 	this->addChild(score_field, 2);
 
 	ranking_field = TextField::create("", "Arial", 30);
-	ranking_field->setPosition(Size(visibleWidth / 4 * 3, visibleHeight / 10 * 7));
+	ranking_field->setPosition(Size(visibleWidth / 2, visibleHeight / 10 * 7));
 	this->addChild(ranking_field, 2);
 
 	rank_field = TextField::create("", "Arial", 30);
-	rank_field->setPosition(Size(visibleWidth / 4 * 3, visibleHeight / 10 * 6));
+	rank_field->setPosition(Size(visibleWidth / 2, visibleHeight / 10 * 3));
 	this->addChild(rank_field, 2);
-
-	head_field = TextField::create("", "Arial", 15);
-	head_field->setPosition(Size(visibleWidth / 4, visibleHeight / 4 * 3));
-	head_field->setString(Global::loginHead);
-	this->addChild(head_field, 2);
-
-	body_field = TextField::create("", "Arial", 20);
-	body_field->setPosition(Size(visibleWidth / 4, visibleHeight / 4 * 2));
-	body_field->setString(Global::loginBody);
-	this->addChild(body_field, 2);
 
 	rankEvent();
 
@@ -95,10 +87,7 @@ void RankScene::onRankHttpCompleted(HttpClient *sender, HttpResponse* response) 
 		return;
 	}
 
-	std::vector<char>* headBuffer = response->getResponseHeader();
 	std::vector<char>* bodyBuffer = response->getResponseData();
-	head_field->setString(string(Global::toString(headBuffer)));
-	body_field->setString(string(Global::toString(bodyBuffer)));
 	rapidjson::Document d;
 	d.Parse<0>(Global::toString(bodyBuffer).c_str());
 	if (d.HasParseError()) {
@@ -106,7 +95,7 @@ void RankScene::onRankHttpCompleted(HttpClient *sender, HttpResponse* response) 
 		return;
 	}
 	if (d.IsObject() && d.HasMember("username") && d.HasMember("maxscore") && d.HasMember("ranking") && d.HasMember("result")) {
-		username_field->setString(d["username"].GetString());
+		username_field->setString(string("玩家名称：") + d["username"].GetString());
 		int maxscore = d["maxscore"].GetInt();
 		int ranking = d["ranking"].GetInt();
 		std::stringstream ss;
@@ -115,10 +104,10 @@ void RankScene::onRankHttpCompleted(HttpClient *sender, HttpResponse* response) 
 		ss >> temp;
 		ss.clear();
 		ss.str("");
-		score_field->setString(temp);
+		score_field->setString(string("最高分数：") + temp);
 		ss << ranking;
 		ss >> temp;
-		ranking_field->setString(temp);
+		ranking_field->setString(string("当前排名：") + temp);
 		temp = "";
 		temp = d["result"].GetString();
 		string result = "";
