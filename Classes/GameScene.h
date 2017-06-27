@@ -28,21 +28,15 @@ public:
 	
 	// add player
 	void addMap();
-	
+
+	// add beans
+	void addBean();
+
 	// add player
 	void addPlayer();
 	
 	// add enemies
 	void addEnemy();
-	
-	// add beans
-	void addBean();
-	
-	// go to losePage
-	void goToLosePage(cocos2d::Ref *pSender);
-	
-	// go to winPage
-	void goToWinPage(cocos2d::Ref *pSender);
 
 	// update to new position of enemies
 	void addKeyboardListener();
@@ -61,6 +55,9 @@ public:
 	// a selector callback
 	void menuCloseCallback(cocos2d::Ref *pSender);
 
+	// 跳转到结算页面
+	void toFinalScene(cocos2d::Ref *pSender, bool isWin);
+
 	void submitEvent();
 
 	void onSubmitHttpCompleted(HttpClient *sender, HttpResponse* response);
@@ -70,8 +67,8 @@ public:
 private:
 	int p_x;
 	int p_y;
-	int wid;
-	int hei;
+	int width;
+	int height;
 	std::vector<Sprite*> beans;
 	TMXTiledMap *map;
 	TMXObjectGroup *wall;

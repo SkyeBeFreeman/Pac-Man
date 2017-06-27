@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.0" orientation="orthogonal" renderorder="right-up" width="16" height="16" tilewidth="40" tileheight="40" nextobjectid="49">
+ <tileset firstgid="1" name="bg" tilewidth="40" tileheight="40" spacing="1" margin="1" tilecount="1" columns="1">
+  <image source="block/bg.png" width="80" height="77"/>
+ </tileset>
+ <tileset firstgid="2" name="C3" tilewidth="40" tileheight="40" tilecount="3" columns="1">
+  <image source="block/C3.png" width="40" height="120"/>
+  <tile id="0">
+   <properties>
+    <property name="Collidable" type="bool" value="true"/>
+   </properties>
+  </tile>
+  <tile id="1">
+   <properties>
+    <property name="Collidable" type="bool" value="true"/>
+   </properties>
+  </tile>
+  <tile id="2">
+   <properties>
+    <property name="Collidable" type="bool" value="true"/>
+   </properties>
+  </tile>
+ </tileset>
+ <layer name="background" width="16" height="16" visible="0">
+  <data encoding="base64" compression="zlib">
+   eJxjZGBgYBzFo3gUj0gMAAYeAQE=
+  </data>
+ </layer>
+ <layer name="walls" width="16" height="16">
+  <data encoding="base64" compression="zlib">
+   eJxjYmBgYKIQkwtG9Y/qH9VPuX5KMAD08AB5
+  </data>
+ </layer>
+ <objectgroup name="elements" visible="0">
+  <object id="1" name="playerBirth" x="320" y="560" width="40" height="40">
+   <properties>
+    <property name="player" type="bool" value="true"/>
+   </properties>
+  </object>
+  <object id="4" name="enemyBirth1" x="40" y="280" width="40" height="40"/>
+  <object id="5" name="enemyBirth2" x="560" y="200" width="40" height="40"/>
+  <object id="6" name="enemyBirth3" x="200" y="40" width="40" height="40"/>
+  <object id="7" name="enemyBirth4" x="400" y="40" width="40" height="40"/>
+  <object id="8" name="gate1" x="0" y="200" width="40" height="40"/>
+  <object id="9" name="gate2" x="600" y="400" width="40" height="40"/>
+ </objectgroup>
+ <objectgroup name="wall">
+  <object id="45" x="1" y="1" width="637" height="37"/>
+  <object id="46" x="0" y="38" width="38" height="599"/>
+  <object id="47" x="39" y="600" width="600" height="38"/>
+  <object id="48" x="601" y="40" width="37" height="560"/>
+ </objectgroup>
+</map>
