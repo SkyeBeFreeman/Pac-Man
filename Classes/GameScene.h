@@ -4,6 +4,7 @@
 #include "ui/CocosGUI.h"
 #include <string>
 #include "Global.h"
+using namespace cocos2d;
 using namespace cocos2d::ui;
 
 #include "network/HttpClient.h"
@@ -23,6 +24,43 @@ public:
     // implement the "static create()" method manually
     CREATE_FUNC(GameScene);
 
+	enum MOVE { UP, DOWN, LEFT, RIGHT, NO_DIRECTION };
+	
+	// add player
+	void addMap();
+	
+	// add player
+	void addPlayer();
+	
+	// add enemies
+	void addEnemy();
+	
+	// add beans
+	void addBean();
+	
+	// go to losePage
+	void goToLosePage(cocos2d::Ref *pSender);
+	
+	// go to winPage
+	void goToWinPage(cocos2d::Ref *pSender);
+
+	// update to new position of enemies
+	void addKeyboardListener();
+	void onKeyPressed(EventKeyboard::KeyCode code, Event* event);
+	void onKeyReleased(EventKeyboard::KeyCode code, Event* event);
+	void update(float f) override;
+	void monsterMove(float f);
+	void redMove(float f);
+	void orangeMove(float f);
+	void pinkMove(float f);
+	void blueMove(float f);
+	bool collide(Sprite *s1, Sprite *s2);
+	bool collide(Sprite *s1, TMXObjectGroup *w);
+	void becomeSuper();
+	void becomenormal(float f);
+	// a selector callback
+	void menuCloseCallback(cocos2d::Ref *pSender);
+
 	void submitEvent();
 
 	void onSubmitHttpCompleted(HttpClient *sender, HttpResponse* response);
@@ -30,9 +68,21 @@ public:
 	void quitEvent();
 
 private:
-    float visibleHeight;
-    float visibleWidth;
-	TextField * score_field;
-	Button *submit_button;
+	int p_x;
+	int p_y;
+	int wid;
+	int hei;
+	std::vector<Sprite*> beans;
+	TMXTiledMap *map;
+	TMXObjectGroup *wall;
+	cocos2d::Sprite *player;
+	Vec2 origin;
+	Size visibleSize;
+	MOVE move = MOVE::RIGHT;
+	Sprite *enemyBlue, *enemyRed, *enemyOrange, *enemyPink, *bigBean1, *bigBean2, *bigBean3, *bigBean4;
+	int o_x, o_y, num;
+	int score;
+	bool t_f, issupered = false;
+	EventListenerKeyboard * keyboardListener;
 };
 

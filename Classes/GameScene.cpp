@@ -37,45 +37,45 @@ bool GameScene::init() {
 		return false;
 	}
 
-	Size size = Director::getInstance()->getVisibleSize();
-	visibleHeight = size.height;
-	visibleWidth = size.width;
+	visibleSize = Director::getInstance()->getVisibleSize();
+	origin = Director::getInstance()->getVisibleOrigin();
 
-	score_field = TextField::create("Score", "Arial", 30);
-	score_field->setPosition(Size(visibleWidth / 4, visibleHeight / 4 * 3));
-	this->addChild(score_field, 2);
-
-	submit_button = Button::create();
-	submit_button->setTitleText("Submit");
-	submit_button->setTitleFontSize(30);
-	submit_button->setPosition(Size(visibleWidth / 4, visibleHeight / 4));
-	submit_button->addClickEventListener(CC_CALLBACK_0(GameScene::submitEvent, this));
-	this->addChild(submit_button, 2);
+	score = 0;
 
 	auto quitButton = Button::create();
 	quitButton->setTitleText("<");
 	quitButton->setTitleFontSize(30);
-	quitButton->setPosition(Size(quitButton->getSize().width, visibleHeight - quitButton->getSize().height));
+	quitButton->setPosition(Size(quitButton->getSize().width, visibleSize.height - quitButton->getSize().height));
 	quitButton->addClickEventListener(CC_CALLBACK_0(GameScene::quitEvent, this));
 	this->addChild(quitButton, 2);
+
+	addMap();
+	addBean();
+	addPlayer();
+	addEnemy();
+	addKeyboardListener();
+	scheduleUpdate();
+	monsterMove(0.1);
 
 	return true;
 }
 
 // 提交成绩事件函数
 void GameScene::submitEvent() {
-	if (score_field->getString() == "Score" || score_field->getString() == "") {
-		return;
-	}
 
-	if (atoi(score_field->getString().c_str()) > Global::maxscore) {
+	if (score > Global::maxscore) {
 		HttpRequest* request = new HttpRequest();
 		request->setUrl((string() + "http://" + Global::ip + ":11900/rank").c_str());
 		request->setRequestType(HttpRequest::Type::POST);
 		request->setResponseCallback(CC_CALLBACK_2(GameScene::onSubmitHttpCompleted, this));
 
+		std::stringstream ss;
+		ss << score;
+		string temp;
+		ss >> temp;
+
 		// 写入POST请求数据
-		string tmp = "username=" + Global::username + "&score=" + score_field->getString();
+		string tmp = "username=" + Global::username + "&score=" + temp;
 		const char* postData = tmp.c_str();
 		request->setRequestData(postData, strlen(postData));
 		request->setTag("POST test");
@@ -97,9 +97,6 @@ void GameScene::onSubmitHttpCompleted(HttpClient *sender, HttpResponse* response
 		log("error buffer: %s", response->getErrorBuffer());
 		return;
 	}
-
-	score_field->setPlaceHolder("Score");
-	score_field->setString("");
 
 	auto rankScene = RankScene::createScene();
 	Director::getInstance()->replaceScene(rankScene);
