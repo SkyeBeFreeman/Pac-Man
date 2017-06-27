@@ -13,6 +13,8 @@ public:
 	static string username;
 	static int maxscore;
 	static string ip;
+	static string status;
+	static int score;
 	static string loginHead;
 	static string loginBody;
 

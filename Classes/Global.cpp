@@ -8,7 +8,9 @@ using std::cmatch;
 
 string Global::username = "";
 int Global::maxscore = 0;
+int Global::score = 0;
 string Global::ip = "119.29.163.132";
+string Global::status = "";
 string Global::loginHead = "";
 string Global::loginBody = "";
 

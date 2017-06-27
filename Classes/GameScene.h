@@ -56,7 +56,7 @@ public:
 	void menuCloseCallback(cocos2d::Ref *pSender);
 
 	// 跳转到结算页面
-	void toFinalScene(cocos2d::Ref *pSender, bool isWin);
+	void toEndScene(cocos2d::Ref *pSender, bool isWin);
 
 	void submitEvent();
 
@@ -75,11 +75,11 @@ private:
 	cocos2d::Sprite *player;
 	Vec2 origin;
 	Size visibleSize;
-	MOVE move = MOVE::RIGHT;
+	MOVE move = MOVE::NO_DIRECTION;
 	Sprite *enemyBlue, *enemyRed, *enemyOrange, *enemyPink, *bigBean1, *bigBean2, *bigBean3, *bigBean4;
 	int o_x, o_y, num;
-	int score;
 	bool t_f, issupered = false;
 	EventListenerKeyboard * keyboardListener;
+	TextField * score_field;
 };
 

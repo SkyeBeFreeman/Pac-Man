@@ -9,6 +9,7 @@
 #include "RankScene.h"
 #include "SelectScene.h"
 #include "CCCircle.h"
+#include "EndScene.h"
 using std::regex;
 using std::match_results;
 using std::regex_match;
@@ -18,6 +19,8 @@ using namespace rapidjson;
 #pragma execution_character_set("UTF-8")
 
 USING_NS_CC;
+
+#define database UserDefault::getInstance()
 
 cocos2d::Scene* GameScene::createScene() {
 	// 'scene' is an autorelease object
@@ -41,7 +44,7 @@ bool GameScene::init() {
 	visibleSize = Director::getInstance()->getVisibleSize();
 	origin = Director::getInstance()->getVisibleOrigin();
 
-	score = 0;
+	Global::score = 0;
 
 	auto quitButton = Button::create();
 	quitButton->setTitleText("<");
@@ -49,6 +52,10 @@ bool GameScene::init() {
 	quitButton->setPosition(Size(origin.x + quitButton->getSize().width, origin.y + visibleSize.height - quitButton->getSize().height));
 	quitButton->addClickEventListener(CC_CALLBACK_0(GameScene::quitEvent, this));
 	this->addChild(quitButton, 2);
+
+	score_field = TextField::create("0", "fonts/Marker Felt.TTF", 30);
+	score_field->setPosition(Size(origin.x + quitButton->getSize().width + score_field->getSize().width, origin.y + visibleSize.height - quitButton->getSize().height));
+	this->addChild(score_field, 2);
 
 	addMap();
 	addBean();
@@ -118,6 +125,9 @@ void GameScene::addBean() {
 
 // 加入玩家
 void GameScene::addPlayer() {
+
+	//TODO 完善玩家的创建
+
 	Size visibleSize = Director::getInstance()->getVisibleSize();
 	Vec2 origin = Director::getInstance()->getVisibleOrigin();
 
@@ -231,6 +241,9 @@ void GameScene::addKeyboardListener() {
 }
 
 void GameScene::onKeyPressed(EventKeyboard::KeyCode code, Event* event) {
+
+	//TODO 完善按键事件
+
 	switch (code) {
 	case EventKeyboard::KeyCode::KEY_A:
 	case EventKeyboard::KeyCode::KEY_LEFT_ARROW:
@@ -305,23 +318,29 @@ void GameScene::onKeyPressed(EventKeyboard::KeyCode code, Event* event) {
 }
 
 void GameScene::onKeyReleased(EventKeyboard::KeyCode code, Event* event) {
-	//switch (code) {
-	//case EventKeyboard::KeyCode::KEY_A:
-	//case EventKeyboard::KeyCode::KEY_LEFT_ARROW:
-	//case EventKeyboard::KeyCode::KEY_D:
-	//case EventKeyboard::KeyCode::KEY_RIGHT_ARROW:
-	//case EventKeyboard::KeyCode::KEY_W:
-	//case EventKeyboard::KeyCode::KEY_UP_ARROW:
-	//case EventKeyboard::KeyCode::KEY_S:
-	//case EventKeyboard::KeyCode::KEY_DOWN_ARROW: {
-	//	move = MOVE::NO_DIRECTION;
-	//}
-	//}
+
+	//TODO 完善代码
+
+	/*switch (code) {
+	case EventKeyboard::KeyCode::KEY_A:
+	case EventKeyboard::KeyCode::KEY_LEFT_ARROW:
+	case EventKeyboard::KeyCode::KEY_D:
+	case EventKeyboard::KeyCode::KEY_RIGHT_ARROW:
+	case EventKeyboard::KeyCode::KEY_W:
+	case EventKeyboard::KeyCode::KEY_UP_ARROW:
+	case EventKeyboard::KeyCode::KEY_S:
+	case EventKeyboard::KeyCode::KEY_DOWN_ARROW: {
+		move = MOVE::NO_DIRECTION;
+	}
+	}*/
 }
 
 void GameScene::update(float f) {
+
+	//TODO 完善代码
+
 	if (issupered == false && (collide(player, enemyBlue) || collide(player, enemyOrange) || collide(player, enemyPink) || collide(player, enemyRed)))
-		toFinalScene(NULL, false); // lose
+		toEndScene(NULL, false); // lose
 	else if (issupered == true && collide(player, enemyRed)) {
 		enemyRed->removeFromParentAndCleanup(true);
 		enemyRed = NULL;
@@ -336,7 +355,7 @@ void GameScene::update(float f) {
 		enemyPink = NULL;
 	}
 	if (collide(player, wall))
-		toFinalScene(NULL, false); // lose
+		toEndScene(NULL, false); // lose
 	if (bigBean1 != NULL &&  collide(player, bigBean1)) {
 		//this->removeChild(bigBean1);
 		bigBean1->removeFromParentAndCleanup(true);
@@ -358,7 +377,7 @@ void GameScene::update(float f) {
 		bigBean4 = NULL;
 		becomeSuper();
 	}
-	if (move == MOVE::LEFT && player->getPosition().x > origin.x + player->getContentSize().width / 2) {
+	/*if (move == MOVE::LEFT && player->getPosition().x > origin.x + player->getContentSize().width / 2) {
 		auto moveBy = MoveBy::create(0.1f, Vec2(-2, 0));
 		player->runAction(moveBy);
 	} else if (move == MOVE::RIGHT && player->getPosition().x < origin.x + visibleSize.width - player->getContentSize().width / 2) {
@@ -370,7 +389,7 @@ void GameScene::update(float f) {
 	} else if (move == MOVE::DOWN && player->getPosition().x < origin.x + visibleSize.width - player->getContentSize().width / 2) {
 		auto moveBy = MoveBy::create(0.1f, Vec2(0, -2));
 		player->runAction(moveBy);
-	}
+	}*/
 
 	for (auto bean = beans.begin(); bean != beans.end(); bean++) {
 		if (collide(player, *bean)) {
@@ -382,10 +401,13 @@ void GameScene::update(float f) {
 	}
 
 	if (beans.size() == 0)
-		toFinalScene(NULL, true); // win
+		toEndScene(NULL, true); // win
 }
 
 void GameScene::monsterMove(float f) {
+
+	//TODO 完善代码
+
 	schedule(schedule_selector(GameScene::pinkMove), 0.01f, kRepeatForever, 0);
 	schedule(schedule_selector(GameScene::orangeMove), 1.0f, kRepeatForever, 0);
 	schedule(schedule_selector(GameScene::redMove), 0.01f, kRepeatForever, 0);
@@ -393,6 +415,9 @@ void GameScene::monsterMove(float f) {
 }
 
 void GameScene::redMove(float f) {
+
+	//TODO 完善代码
+
 	if (issupered) return;
 	if (enemyRed == NULL) return;
 	if (collide(enemyOrange, wall) && t_f) {
@@ -449,6 +474,9 @@ void GameScene::redMove(float f) {
 }
 
 void GameScene::orangeMove(float f) {
+
+	//TODO 完善代码
+
 	if (enemyOrange == NULL) return;
 	if (issupered) return;
 	t_f = true;
@@ -477,6 +505,9 @@ void GameScene::orangeMove(float f) {
 }
 
 void GameScene::pinkMove(float f) {
+
+	//TODO 完善代码
+
 	if (enemyPink == NULL) return;
 	if (issupered) return;
 	int x, y;
@@ -515,6 +546,9 @@ void GameScene::pinkMove(float f) {
 }
 
 void GameScene::blueMove(float f) {
+
+	//TODO 完善代码
+
 	if (enemyBlue == NULL) return;
 	if (issupered) return;
 	if (enemyBlue->getPositionX() > player->getPositionX() + 10) {
@@ -545,6 +579,9 @@ void GameScene::blueMove(float f) {
 }
 
 bool GameScene::collide(Sprite *s1, Sprite *s2) {
+
+	//TODO 完善代码
+
 	if (s2 == NULL) return false;
 	if (CCCircle(CCPoint(Vec2(s2->getPosition().x, s2->getPosition().y)), s2->getContentSize().width / 2 - 10).intersectsCircle(CCCircle(CCPoint(Vec2(s1->getPosition().x,
 		s1->getPosition().y)), s1->getContentSize().height / 2 - 10)))
@@ -553,6 +590,9 @@ bool GameScene::collide(Sprite *s1, Sprite *s2) {
 }
 
 bool GameScene::collide(Sprite *s1, TMXObjectGroup *w) {
+
+	//TODO 完善代码
+
 	auto container = w->getObjects();
 
 	for (auto obj : container) {
@@ -571,6 +611,9 @@ bool GameScene::collide(Sprite *s1, TMXObjectGroup *w) {
 }
 
 void GameScene::becomeSuper() {
+
+	//TODO 完善代码
+
 	issupered = true;
 	float x, y;
 	if (enemyBlue != NULL) {
@@ -605,6 +648,9 @@ void GameScene::becomeSuper() {
 }
 
 void GameScene::becomenormal(float f) {
+
+	//TODO 完善代码
+
 	float x, y;
 	issupered = false;
 	if (enemyBlue != NULL) {
@@ -682,25 +728,26 @@ void GameScene::becomenormal(float f) {
 }
 
 // 跳转到结算界面
-void GameScene::toFinalScene(cocos2d::Ref *pSender, bool isWin) {
+void GameScene::toEndScene(cocos2d::Ref *pSender, bool isWin) {
 	if (isWin) {
-
+		Global::status = "You Win";
 	} else {
-
+		Global::status = "You Lose";
 	}
+	submitEvent();
 }
 
 // 提交成绩事件函数
 void GameScene::submitEvent() {
 
-	if (score > Global::maxscore) {
+	if (Global::score > Global::maxscore) {
 		HttpRequest* request = new HttpRequest();
-		request->setUrl((string() + "http://" + Global::ip + ":11900/rank").c_str());
+		request->setUrl((string() + "http://" + Global::ip + ":11900/submit").c_str());
 		request->setRequestType(HttpRequest::Type::POST);
 		request->setResponseCallback(CC_CALLBACK_2(GameScene::onSubmitHttpCompleted, this));
 
 		std::stringstream ss;
-		ss << score;
+		ss << Global::score;
 		string temp;
 		ss >> temp;
 
@@ -710,10 +757,15 @@ void GameScene::submitEvent() {
 		request->setRequestData(postData, strlen(postData));
 		request->setTag("POST test");
 
+		Global::maxscore = Global::score;
+		database->setIntegerForKey("maxscore", Global::maxscore);
+
 		cocos2d::network::HttpClient::getInstance()->send(request);
 		request->release();
 	} else {
 		CCLOG("不够高啊");
+		auto endScene = EndScene::createScene();
+		Director::getInstance()->replaceScene(endScene);
 	}
 }
 
@@ -728,8 +780,8 @@ void GameScene::onSubmitHttpCompleted(HttpClient *sender, HttpResponse* response
 		return;
 	}
 
-	auto rankScene = RankScene::createScene();
-	Director::getInstance()->replaceScene(rankScene);
+	auto endScene = EndScene::createScene();
+	Director::getInstance()->replaceScene(endScene);
 }
 
 // 退出点击事件
