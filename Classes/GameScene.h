@@ -55,7 +55,7 @@ public:
 	// a selector callback
 	void menuCloseCallback(cocos2d::Ref *pSender);
 
-	// Ìø×ªµ½½áËãÒ³Ãæ
+	// ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò³ï¿½ï¿½
 	void toEndScene(cocos2d::Ref *pSender, bool isWin);
 
 	void submitEvent();
@@ -75,7 +75,7 @@ private:
 	cocos2d::Sprite *player;
 	Vec2 origin;
 	Size visibleSize;
-	MOVE move = MOVE::NO_DIRECTION;
+	MOVE move = MOVE::LEFT;
 	Sprite *enemyBlue, *enemyRed, *enemyOrange, *enemyPink, *bigBean1, *bigBean2, *bigBean3, *bigBean4;
 	int o_x, o_y, num;
 	bool t_f, issupered = false;
