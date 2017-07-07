@@ -39,7 +39,7 @@ bool CCCircle::intersectsRect(cocos2d::CCRect& rect) const {
 	if (arcOy >= rectY && arcOy <= rectY + rectH) {
 	int minDisX;
 	if (arcOx < rectX)
-	minDisX = rectX - arcOx;
+		minDisX = rectX - arcOx;
 	else if (arcOx > (rectX + rectW))
 		minDisX = arcOx - rectX - rectW;
 	else
@@ -49,15 +49,15 @@ bool CCCircle::intersectsRect(cocos2d::CCRect& rect) const {
 	}
 	//判断当圆心的X坐标进入矩形内时Y的位置，如果X在(rectY-arcR)到(rectY+rectH+arcR)这个范围内，则碰撞成功
 	if (arcOx >= rectX && arcOx <= rectX + rectW) {
-	int minDisY;
-	if (arcOy < rectY)
-	minDisY = rectY - arcOy;
-	else if (arcOy > (rectY + rectH))
-	minDisY = arcOy - rectY - rectH;
-	else
-	return true;
-	if (minDisY <= arcR)
-	return true;
+		int minDisY;
+		if (arcOy < rectY)
+			minDisY = rectY - arcOy;
+		else if (arcOy > (rectY + rectH))
+			minDisY = arcOy - rectY - rectH;
+		else
+			return true;
+		if (minDisY <= arcR)
+			return true;
 	}	
 	return false;
 }
