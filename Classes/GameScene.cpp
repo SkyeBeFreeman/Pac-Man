@@ -10,6 +10,10 @@
 #include "SelectScene.h"
 #include "CCCircle.h"
 #include "EndScene.h"
+#include "SimpleAudioEngine.h"
+
+using namespace cocos2d;
+using namespace CocosDenshion;
 using std::regex;
 using std::match_results;
 using std::regex_match;
@@ -17,6 +21,7 @@ using std::cmatch;
 using namespace rapidjson;
 
 #pragma execution_character_set("UTF-8")
+#define WALLTHINKNESS 37	// 墙的厚度 37
 
 USING_NS_CC;
 
@@ -44,40 +49,50 @@ bool GameScene::init() {
 	visibleSize = Director::getInstance()->getVisibleSize();
 	origin = Director::getInstance()->getVisibleOrigin();
 
+	// 游戏退出键
+	auto quit = MenuItemLabel::create(Label::createWithTTF("Quit", "fonts/Marker Felt.ttf", 30), CC_CALLBACK_1(GameScene::quitEvent, this));
+	quit->setColor(Color3B(255, 255, 255));	// 字体白色
+	quit->setPosition(Size(origin.x + 30, origin.y + visibleSize.height - 20));
+	auto menu = Menu::create(quit, NULL);
+	menu->setPosition(Vec2::ZERO);
+	this->addChild(menu, 2);
+
+	// 游戏记分板（游戏刚开始得分为0）
 	Global::score = 0;
-
-	auto quitButton = Button::create();
-	quitButton->setTitleText("<");
-	quitButton->setTitleFontSize(30);
-	quitButton->setPosition(Size(origin.x + quitButton->getSize().width, origin.y + visibleSize.height - quitButton->getSize().height));
-	quitButton->addClickEventListener(CC_CALLBACK_0(GameScene::quitEvent, this));
-	this->addChild(quitButton, 2);
-
-	score_field = TextField::create("0", "fonts/Marker Felt.TTF", 30);
-	score_field->setPosition(Size(origin.x + quitButton->getSize().width + score_field->getSize().width, origin.y + visibleSize.height - quitButton->getSize().height));
+	score_field = Label::create("score: 0", "fonts/Marker Felt.TTF", 30);
+	score_field->setPosition(Vec2(quit->getPositionX() + 10, quit->getPositionY() - 30));
 	this->addChild(score_field, 2);
 
+	isMove = false;
+	isRewarded = false;
+	preloadMusic();
+	playBgm();
 	addMap();
-	addBean();
+	addBeans();
 	addPlayer();
 	addEnemy();
 	addKeyboardListener();
-	scheduleUpdate();
-	monsterMove(0.1);
-
+	schedule(schedule_selector(GameScene::update), 0.04f, kRepeatForever, 0);
+	enemyMove();
 	return true;
+}
+
+void GameScene::preloadMusic() {
+	SimpleAudioEngine::sharedEngine()->preloadBackgroundMusic("music/bg3.wav");
+	SimpleAudioEngine::sharedEngine()->preloadBackgroundMusic("music/win.wav");
+	SimpleAudioEngine::sharedEngine()->preloadBackgroundMusic("music/gameover.mp3");
+}
+
+void GameScene::playBgm() {
+	SimpleAudioEngine::sharedEngine()->playBackgroundMusic("music/bg3.wav", true);
 }
 
 // 加载地图
 void GameScene::addMap() {
 
-	//TODO 完善地图
-
 	auto label = Label::createWithTTF("Pac Man", "fonts/Marker Felt.TTF", 40);
-
 	label->setPosition(Vec2(origin.x + visibleSize.width / 2,
 		origin.y + visibleSize.height - label->getContentSize().height));
-
 	this->addChild(label, 1);
 
 	map = TMXTiledMap::create("wallMap1.tmx");
@@ -85,74 +100,57 @@ void GameScene::addMap() {
 	map->setAnchorPoint(Vec2(0.5, 0.5));
 	map->setScale(640 / map->getContentSize().width);
 	this->addChild(map, 0);
-	p_x = map->getPosition().x;
-	p_y = map->getPosition().y;
 	width = map->getContentSize().width;
 	height = map->getContentSize().height;
-
+	map_x = map->getPosition().x - width / 2;
+	map_y = map->getPosition().y - height / 2;
 	wall = map->getObjectGroup("wall");
 }
 
 // 加入豆子
-void GameScene::addBean() {
-
-	//TODO 完善豆子的创建
-
+void GameScene::addBeans() {
+	// 添加小豆子
 	for (int i = 0; i < 9; i++) {
 		for (int j = 0; j < 9; j++) {
 			auto bean = Sprite::create("sprites/bean1.png");
-			bean->setPosition(Vec2(p_x - width / 2 + width / 10 * i + 70, p_y - height / 2 + height / 10 * j + 70));
+			bean->setPosition(Vec2(map_x + width / 10 * i + 70, map_y / 2 + height / 10 * j + 70));
 			beans.push_back(bean);
 			this->addChild(bean, 1);
 		}
 	}
-	bigBean1 = Sprite::create("sprites/bean2.png");
-	bigBean1->setPosition(Vec2(p_x - width / 2 + width / 10 * 1 + 70, p_y - height / 2 + height / 10 * 1 + 70));
-	this->addChild(bigBean1, 1);
-	bigBean2 = Sprite::create("sprites/bean2.png");
-	bigBean2->setPosition(Vec2(p_x - width / 2 + width / 10 * 1 + 70, p_y - height / 2 + height / 10 * 7 + 70));
-	this->addChild(bigBean2, 1);
-	bigBean3 = Sprite::create("sprites/bean2.png");
-	bigBean3->setPosition(Vec2(p_x - width / 2 + width / 10 * 7 + 70, p_y - height / 2 + height / 10 * 1 + 70));
-	this->addChild(bigBean3, 1);
-	bigBean4 = Sprite::create("sprites/bean2.png");
-	bigBean4->setPosition(Vec2(p_x - width / 2 + width / 10 * 7 + 70, p_y - height / 2 + height / 10 * 7 + 70));
-	this->addChild(bigBean4, 1);
-	/*auto bigBean = Sprite::create("GameSprite/bean2.png");
-	bigBean->setPosition(Vec2(100, 300));
-	this->addChild(bigBean, 1);*/
+	// 添加四个角上的大豆子
+	// 四个大豆子的坐标
+	Vec2 bigBeanLocations[4] = { 
+		Vec2(map_x + width / 10 * 1 + 70, map_y + height / 10 * 1 + 70),
+		Vec2(map_x + width / 10 * 1 + 70, map_y +height / 10 * 7 + 70),
+		Vec2(map_x + width / 10 * 7 + 70, map_y + height / 10 * 1 + 70),
+		Vec2(map_x + width / 10 * 7 + 70, map_y + height / 10 * 7 + 70) };
+	// 添加
+	for (int i = 0; i < 4; i++) {
+		bigBeans[i] = addBigBeans(bigBeanLocations[i]);
+	}
+}
+
+// 添加大豆子
+Sprite* GameScene::addBigBeans(Vec2 locaion) {
+	auto bigBean = Sprite::create("sprites/bean2.png");
+	bigBean->setPosition(locaion);
+	this->addChild(bigBean, 1);
+	return bigBean;
 }
 
 // 加入玩家
 void GameScene::addPlayer() {
-
-	//TODO 完善玩家的创建
-
-	Size visibleSize = Director::getInstance()->getVisibleSize();
-	Vec2 origin = Director::getInstance()->getVisibleOrigin();
-
 	TMXObjectGroup* objectGroup = map->getObjectGroup("elements");
 	ValueVector objects = objectGroup->getObjects();
-	player = Sprite::create("sprites/Player1.png");
+	player = Sprite::create("sprites/player1.png");
 	player->setPosition(Vec2(beans[27]->getPosition().x, beans[3]->getPosition().y));
-	//player->setScale(0.5);
-	//for (auto &obj : objects) {
-	//	ValueMap& values = obj.asValueMap();
-	//	if (values["name"].asString() == "playerBirth")
-	//	{
-	//		float x = values["x"].asFloat();      // x坐标
-	//		float y = values["y"].asFloat();      // y坐标
-	//		player->setPosition(p_x - width / 2 + x - 20, p_y - height / 2 + y + 30);
-	//		break;
-	//	}
-	//}
-	////player->setPosition(Vec2(origin.x + 625, origin.y + 113));
 	this->addChild(player, 1);
-
+	// 加入动画
 	auto playerAnimation = Animation::create();
 	for (int i = 1; i < 3; i++) {
 		char nameSize[100] = { 0 };
-		sprintf(nameSize, "sprites/Player%d.png", i);
+		sprintf(nameSize, "sprites/player%d.png", i);
 		playerAnimation->addSpriteFrameWithFile(nameSize);
 	}
 	playerAnimation->setDelayPerUnit(0.1f);
@@ -161,585 +159,442 @@ void GameScene::addPlayer() {
 	player->runAction(playerAnimate);
 }
 
-// 加入敌人
+// 加入怪物
 void GameScene::addEnemy() {
-	// 新建蓝色敌人
-	enemyBlue = Sprite::create("sprites/Blue1.png");
-	enemyBlue->setPosition(Vec2(100, 200));
-	this->addChild(enemyBlue, 1);
-
-	// 加载蓝色敌人动画
-	auto blueAnimation = Animation::create();
-	for (int i = 1; i < 3; i++) {
-		char nameSize[100] = { 0 };
-		sprintf(nameSize, "sprites/Blue%d.png", i);
-		blueAnimation->addSpriteFrameWithFile(nameSize);
-	}
-	blueAnimation->setDelayPerUnit(0.1f);
-	blueAnimation->setLoops(-1);
-	auto blueAnimate = Animate::create(blueAnimation);
-	enemyBlue->runAction(blueAnimate);
-
-	// 新建橙色敌人
-	enemyOrange = Sprite::create("sprites/Orange1.png");
-	enemyOrange->setPosition(Vec2(500, 100));
-	this->addChild(enemyOrange, 1);
-
-	// 加载橙色敌人动画
-	auto orangeAnimation = Animation::create();
-	for (int i = 1; i < 3; i++) {
-		char nameSize[100] = { 0 };
-		sprintf(nameSize, "sprites/Orange%d.png", i);
-		orangeAnimation->addSpriteFrameWithFile(nameSize);
-	}
-	orangeAnimation->setDelayPerUnit(0.1f);
-	orangeAnimation->setLoops(-1);
-	auto orangeAnimate = Animate::create(orangeAnimation);
-	enemyOrange->runAction(orangeAnimate);
-
-	// 新建粉色敌人
-	enemyPink = Sprite::create("sprites/Pink1.png");
-	enemyPink->setPosition(Vec2(200, 300));
-	this->addChild(enemyPink, 1);
-
-	// 加载粉色敌人动画
-	auto pinkAnimation = Animation::create();
-	for (int i = 1; i < 3; i++) {
-		char nameSize[100] = { 0 };
-		sprintf(nameSize, "sprites/Pink%d.png", i);
-		pinkAnimation->addSpriteFrameWithFile(nameSize);
-	}
-	pinkAnimation->setDelayPerUnit(0.1f);
-	pinkAnimation->setLoops(-1);
-	auto pinkAnimate = Animate::create(pinkAnimation);
-	enemyPink->runAction(pinkAnimate);
-
-	// 新建红色敌人
-	enemyRed = Sprite::create("sprites/Red1.png");
-	enemyRed->setPosition(Vec2(300, 400));
-	this->addChild(enemyRed, 1);
-
-	// 加载红色敌人动画
-	auto redAnimation = Animation::create();
-	for (int i = 1; i < 3; i++) {
-		char nameSize[100] = { 0 };
-		sprintf(nameSize, "sprites/Red%d.png", i);
-		redAnimation->addSpriteFrameWithFile(nameSize);
-	}
-	redAnimation->setDelayPerUnit(0.1f);
-	redAnimation->setLoops(-1);
-	auto redAnimate = Animate::create(redAnimation);
-	enemyRed->runAction(redAnimate);
+	Vec2 enermyLocation[4] = { Vec2(480, 320), Vec2(500, 100), Vec2(200, 300), Vec2(300, 400) };
+	enemys[ENERMYCOLOR::BLUE] = addEnemyByColor(ENERMYCOLOR::BLUE, enermyLocation[ENERMYCOLOR::BLUE]);
+	enemys[ENERMYCOLOR::RED] = addEnemyByColor(ENERMYCOLOR::RED, enermyLocation[ENERMYCOLOR::RED]);
+	enemys[ENERMYCOLOR::ORANGE] = addEnemyByColor(ENERMYCOLOR::ORANGE, enermyLocation[ENERMYCOLOR::ORANGE]);
+	enemys[ENERMYCOLOR::PINK] = addEnemyByColor(ENERMYCOLOR::PINK, enermyLocation[ENERMYCOLOR::PINK]);
 }
 
-// update to new position of enemies
+// 根据怪物颜色创建怪物
+Sprite *GameScene::addEnemyByColor(int color, Vec2 location) {
+	auto enemy = Sprite::create("sprites/" + enermy_color[color] + "1.png");
+	enemy->setPosition(location);
+	this->addChild(enemy, 1);
+
+	auto animation = Animation::create();
+	for (int i = 1; i < 5; i++) {
+		char nameSize[100] = { 0 };
+		sprintf(nameSize, ("sprites/" + enermy_color[color] + "%d.png").data(), i);
+		animation->addSpriteFrameWithFile(nameSize);
+	}
+	animation->setDelayPerUnit(0.1f);
+	animation->setLoops(-1);
+	auto blueAnimate = Animate::create(animation);
+	enemy->runAction(blueAnimate);
+	return enemy;
+}
+
+// 键盘控制玩家移动
+void GameScene::movePlayer() {
+	switch (move)
+	{
+	case GameScene::UP:
+		player->runAction(MoveBy::create(0.04f, Vec2(0, 10)));
+		break;
+	case GameScene::DOWN:
+		player->runAction(MoveBy::create(0.04f, Vec2(0, -10)));
+		break;
+	case GameScene::LEFT:
+		player->runAction(MoveBy::create(0.04f, Vec2(-10, 0)));
+		break;
+	case GameScene::RIGHT:
+		player->runAction(MoveBy::create(0.04f, Vec2(10, 0)));
+		break;
+	default:
+		break;
+	}
+}
+
+// 不同颜色的怪物移动位置不同
+void GameScene::enemyMove() {
+	schedule(schedule_selector(GameScene::pinkEnemyMove), 1.5f);
+	schedule(schedule_selector(GameScene::blueEnemyMove), 0.5f);
+	schedule(schedule_selector(GameScene::orangeEnemyMove), 0.02f);
+	schedule(schedule_selector(GameScene::redEnemyMove), 0.5f);
+}
+
+// pink 跟着玩家移动随机距离
+void GameScene::pinkEnemyMove(float time) {
+	if (enemys[ENERMYCOLOR::PINK] == NULL || isRewarded)
+		return;
+	// 当前位置的x和y
+	int pink_x = enemys[ENERMYCOLOR::PINK]->getPositionX(), pink_y = enemys[ENERMYCOLOR::PINK]->getPositionY();
+	// 获得怪兽与玩家之间的距离x和y
+	int distanceX = int(player->getPositionX() - pink_x);
+	int distanceY = int(player->getPositionY() - pink_y);
+	int moveX = 0;
+	if (distanceX != 0)
+		moveX = distanceX < 0 ? -rand() % distanceX: rand() % distanceX;
+	int moveY = 0;
+	if (distanceY != 0)
+		moveY = distanceY < 0 ? -rand() % distanceY : rand() % distanceY;
+	// 先竖向后横向
+	Sequence *seq = Sequence::create(MoveBy::create(time / 2, Vec2(0, moveY / 2)), MoveBy::create(time / 2, Vec2(moveX / 2, 0)), NULL);
+	enemys[ENERMYCOLOR::PINK]->runAction(seq);
+}
+
+// blue 随机横向或竖向 移动 随机距离
+void GameScene::blueEnemyMove(float time) {
+	if (enemys[ENERMYCOLOR::BLUE] == NULL || isRewarded)
+		return;
+	int blue_x = enemys[ENERMYCOLOR::BLUE]->getPositionX(), blue_y = enemys[ENERMYCOLOR::BLUE]->getPositionY();
+	int move_distance = -100 + rand() % 200;	// 随机决定移动距离
+	bool isMoveX = rand() % 2 ? true : false;	// 随机决定是否横向移动
+	Vec2 moveByVec2 = Vec2(0, 0);
+	if (isMoveX) {
+		// 不出墙
+		while (move_distance + blue_x > map_x + width - WALLTHINKNESS || move_distance + blue_x < map_x + WALLTHINKNESS) {
+			move_distance = -100 + rand() % 200;
+		}
+		moveByVec2 = Vec2(move_distance, 0);
+	}
+	else {
+		// 不出墙
+		while (move_distance + blue_y > map_y + height - WALLTHINKNESS || move_distance + blue_y < map_y + WALLTHINKNESS) {
+			move_distance = -100 + rand() % 200;
+		}
+		moveByVec2 = Vec2(0, move_distance);
+	}
+	auto moveBy = MoveBy::create(time, moveByVec2);
+	enemys[ENERMYCOLOR::BLUE]->runAction(moveBy);
+}
+
+// orange 跟着玩家走
+void GameScene::orangeEnemyMove(float time) {
+	if (enemys[ENERMYCOLOR::ORANGE] == NULL || isRewarded)
+		return;
+	int moveX = enemys[ENERMYCOLOR::ORANGE]->getPositionX() > player->getPositionX() ? -1 : 1;
+	int moveY = enemys[ENERMYCOLOR::ORANGE]->getPositionY() > player->getPositionY() ? -1 : 1;
+	Sequence *seq = Sequence::create(MoveBy::create(time / 2, Vec2(0, moveY)), MoveBy::create(time / 2, Vec2(moveX, 0)), NULL);
+	enemys[ENERMYCOLOR::ORANGE]->runAction(seq);
+}
+
+// red 随机横向或竖向 移动 随机距离（与blue相同）
+void GameScene::redEnemyMove(float time) {
+	if (enemys[ENERMYCOLOR::RED] == NULL || isRewarded)
+		return;
+	int red_x = enemys[ENERMYCOLOR::RED]->getPositionX(), red_y = enemys[ENERMYCOLOR::RED]->getPositionY();
+	int move_distance = -100 + rand() % 200;
+	bool isMoveX = rand() % 2 ? true : false;	// 是否横向移动
+	Vec2 moveByVec2 = Vec2(0, 0);
+	if (isMoveX) {
+		// 不出墙
+		while (move_distance + red_x > map_x + width - WALLTHINKNESS || move_distance + red_x < map_x + WALLTHINKNESS) {
+			move_distance = -100 + rand() % 200;
+		}
+		moveByVec2 = Vec2(move_distance, 0);
+	}
+	else {
+		// 不出墙
+		while (move_distance + red_y > map_y + height - WALLTHINKNESS || move_distance + red_y < map_y + WALLTHINKNESS) {
+			move_distance = -100 + rand() % 200;
+		}
+		moveByVec2 = Vec2(0, move_distance);
+	}
+	auto moveBy = MoveBy::create(time, moveByVec2);
+	enemys[ENERMYCOLOR::RED]->runAction(moveBy);
+}
+
+// 添加键盘响应事件--四个方向+长按可直走
 void GameScene::addKeyboardListener() {
-	keyboardListener = EventListenerKeyboard::create();
+	auto keyboardListener = EventListenerKeyboard::create();
 	keyboardListener->onKeyPressed = CC_CALLBACK_2(GameScene::onKeyPressed, this);
 	keyboardListener->onKeyReleased = CC_CALLBACK_2(GameScene::onKeyReleased, this);
-	_eventDispatcher->addEventListenerWithFixedPriority(keyboardListener, 1);
+	_eventDispatcher->addEventListenerWithSceneGraphPriority(keyboardListener, this);	// 注册分发器
 }
 
 void GameScene::onKeyPressed(EventKeyboard::KeyCode code, Event* event) {
-
-	//TODO 完善按键事件
-
 	switch (code) {
-	case EventKeyboard::KeyCode::KEY_A:
-	case EventKeyboard::KeyCode::KEY_LEFT_ARROW:
-	{
-		if (move == MOVE::RIGHT)
-			player->setFlipX(true);
-		else if (move == MOVE::UP) {
-			player->setRotation(0);
-			player->setFlipX(true);
-		} else if (move == MOVE::DOWN) {
-			player->setRotation(0);
-			player->setFlipX(true);
+		case EventKeyboard::KeyCode::KEY_A:
+		case EventKeyboard::KeyCode::KEY_CAPITAL_A:
+		case EventKeyboard::KeyCode::KEY_LEFT_ARROW:
+		{
+			if (move == MOVE::RIGHT)
+				player->setFlipX(true);
+			else if (move == MOVE::UP) {
+				player->setRotation(0);
+				player->setFlipX(true);
+			}
+			else if (move == MOVE::DOWN) {
+				player->setRotation(0);
+				player->setFlipX(true);
+			}
+			if (move != MOVE::LEFT || player->getPosition().x > origin.x) {
+				move = MOVE::LEFT;
+				isMove = true;
+			}
+			break;
 		}
-		if (move != MOVE::LEFT || player->getPosition().x > origin.x) {
-			auto moveBy = MoveBy::create(0.1f, Vec2(-2, 0));
-			player->runAction(moveBy);
-			move = MOVE::LEFT;
+		case EventKeyboard::KeyCode::KEY_D:
+		case EventKeyboard::KeyCode::KEY_RIGHT_ARROW:
+		{
+			if (move == MOVE::LEFT)
+				player->setFlipX(false);
+			else if (move == MOVE::UP)
+				player->setRotation(0);
+			else if (move == MOVE::DOWN)
+				player->setRotation(0);
+			if (move != MOVE::RIGHT || player->getPosition().x < origin.x + visibleSize.width) {
+				move = MOVE::RIGHT;
+				isMove = true;
+			}
+			break;
 		}
-		break;
-	}
-	case EventKeyboard::KeyCode::KEY_D:
-	case EventKeyboard::KeyCode::KEY_RIGHT_ARROW:
-	{
-		if (move == MOVE::LEFT)
-			player->setFlipX(false);
-		else if (move == MOVE::UP)
-			player->setRotation(0);
-		else if (move == MOVE::DOWN)
-			player->setRotation(0);
-		if (move != MOVE::RIGHT || player->getPosition().x < origin.x + visibleSize.width) {
-			auto moveBy = MoveBy::create(0.1f, Vec2(2, 0));
-			player->runAction(moveBy);
-			move = MOVE::RIGHT;
+		case EventKeyboard::KeyCode::KEY_W:
+		case EventKeyboard::KeyCode::KEY_CAPITAL_W:
+		case EventKeyboard::KeyCode::KEY_UP_ARROW:
+		{
+			if (move == MOVE::LEFT) {
+				player->setFlipX(false);
+				player->setRotation(-90);
+			}
+			else if (move == MOVE::RIGHT) {
+				player->setRotation(-90);
+			}
+			else if (move == MOVE::DOWN)
+				player->setRotation(-90);
+			if (move != MOVE::UP || player->getPosition().x < origin.x + visibleSize.width) {
+				move = MOVE::UP;
+				isMove = true;
+			}
+			break;
 		}
-		break;
-	}
-	case EventKeyboard::KeyCode::KEY_W:
-	case EventKeyboard::KeyCode::KEY_UP_ARROW:
-	{
-		if (move == MOVE::LEFT) {
-			player->setFlipX(false);
-			player->setRotation(-90);
-		} else if (move == MOVE::RIGHT) {
-			player->setRotation(-90);
-		} else if (move == MOVE::DOWN)
-			player->setRotation(-90);
-		if (move != MOVE::UP || player->getPosition().x < origin.x + visibleSize.width) {
-			auto moveBy = MoveBy::create(0.1f, Vec2(0, 2));
-			player->runAction(moveBy);
-			move = MOVE::UP;
+		case EventKeyboard::KeyCode::KEY_S:
+		case EventKeyboard::KeyCode::KEY_CAPITAL_S:
+		case EventKeyboard::KeyCode::KEY_DOWN_ARROW:
+		{
+			if (move == MOVE::LEFT) {
+				player->setFlipX(false);
+				player->setRotation(90);
+			}
+			else if (move == MOVE::RIGHT) {
+				player->setRotation(90);
+			}
+			else if (move == MOVE::UP)
+				player->setRotation(90);
+			if (move != MOVE::DOWN || player->getPosition().x < origin.x + visibleSize.width) {
+				move = MOVE::DOWN;
+				isMove = true;
+			}
+			break;
 		}
-		break;
-	}
-	case EventKeyboard::KeyCode::KEY_S:
-	case EventKeyboard::KeyCode::KEY_DOWN_ARROW:
-	{
-		if (move == MOVE::LEFT) {
-			player->setFlipX(false);
-			player->setRotation(90);
-		} else if (move == MOVE::RIGHT) {
-			player->setRotation(90);
-		} else if (move == MOVE::UP)
-			player->setRotation(90);
-		if (move != MOVE::DOWN || player->getPosition().x < origin.x + visibleSize.width) {
-			auto moveBy = MoveBy::create(0.1f, Vec2(0, -2));
-			player->runAction(moveBy);
-			move = MOVE::DOWN;
-		}
-		break;
-	}
 	}
 }
 
 void GameScene::onKeyReleased(EventKeyboard::KeyCode code, Event* event) {
-
-	//TODO 完善代码
-
-	/*switch (code) {
-	case EventKeyboard::KeyCode::KEY_A:
-	case EventKeyboard::KeyCode::KEY_LEFT_ARROW:
-	case EventKeyboard::KeyCode::KEY_D:
-	case EventKeyboard::KeyCode::KEY_RIGHT_ARROW:
-	case EventKeyboard::KeyCode::KEY_W:
-	case EventKeyboard::KeyCode::KEY_UP_ARROW:
-	case EventKeyboard::KeyCode::KEY_S:
-	case EventKeyboard::KeyCode::KEY_DOWN_ARROW: {
-		move = MOVE::NO_DIRECTION;
+	switch (code) {
+		case EventKeyboard::KeyCode::KEY_A:
+		case EventKeyboard::KeyCode::KEY_CAPITAL_A:
+		case EventKeyboard::KeyCode::KEY_LEFT_ARROW:
+		case EventKeyboard::KeyCode::KEY_D:
+		case EventKeyboard::KeyCode::KEY_CAPITAL_D:
+		case EventKeyboard::KeyCode::KEY_RIGHT_ARROW:
+		case EventKeyboard::KeyCode::KEY_W:
+		case EventKeyboard::KeyCode::KEY_CAPITAL_W:
+		case EventKeyboard::KeyCode::KEY_UP_ARROW:
+		case EventKeyboard::KeyCode::KEY_S:
+		case EventKeyboard::KeyCode::KEY_CAPITAL_S:
+		case EventKeyboard::KeyCode::KEY_DOWN_ARROW: {
+			isMove = false;
+		}
 	}
-	}*/
 }
 
 void GameScene::update(float f) {
-
-	//TODO 完善代码
-
-	if (issupered == false && (collide(player, enemyBlue) || collide(player, enemyOrange) || collide(player, enemyPink) || collide(player, enemyRed)))
+	if (isMove) {
+		this->movePlayer();
+	}
+	if (collide(player, wall)) {
 		toEndScene(NULL, false); // lose
-	else if (issupered == true && collide(player, enemyRed)) {
-		enemyRed->removeFromParentAndCleanup(true);
-		enemyRed = NULL;
-	} else if (issupered == true && collide(player, enemyOrange)) {
-		enemyOrange->removeFromParentAndCleanup(true);
-		enemyOrange = NULL;
-	} else if (issupered == true && collide(player, enemyBlue)) {
-		enemyBlue->removeFromParentAndCleanup(true);
-		enemyBlue = NULL;
-	} else if (issupered == true && collide(player, enemyPink)) {
-		enemyPink->removeFromParentAndCleanup(true);
-		enemyPink = NULL;
 	}
-	if (collide(player, wall))
-		toEndScene(NULL, false); // lose
-	if (bigBean1 != NULL &&  collide(player, bigBean1)) {
-		//this->removeChild(bigBean1);
-		bigBean1->removeFromParentAndCleanup(true);
-		bigBean1 = NULL;
-		becomeSuper();
+	// 在没有获得奖励的状态下，碰到怪物，lose
+	if (!isRewarded) {
+		for (int i = 0; i < 4; i++) {
+			if (enemys[i] != NULL && collide(player, enemys[i])) {
+				toEndScene(NULL, false);
+			}
+		}
 	}
-	if (bigBean2 != NULL &&  collide(player, bigBean2)) {
-		bigBean2->removeFromParentAndCleanup(true);
-		bigBean2 = NULL;
-		becomeSuper();
+	else {	// 在获得奖励的状态下，玩家可以吃掉怪物
+		for (int i = 0; i < 4; i++) {
+			if (enemys[i] != NULL && collide(player, enemys[i])) {
+				enemys[i]->removeFromParentAndCleanup(true);
+				darkEnermys[i]->removeFromParentAndCleanup(true);
+				darkEnermys[i] = NULL;
+				enemys[i] = NULL;
+			}
+		}
 	}
-	if (bigBean3 != NULL && collide(player, bigBean3)) {
-		bigBean3->removeFromParentAndCleanup(true);
-		bigBean3 = NULL;
-		becomeSuper();
+	
+	// 判断玩家是否吃到大豆子并获得奖励
+	for (int i = 0; i < 4; i++) {
+		if (bigBeans[i] != NULL && collide(player, bigBeans[i])) {
+			bigBeans[i]->removeFromParentAndCleanup(true);
+			bigBeans[i] = NULL;
+			if (!isRewarded) {
+				isRewarded = true;
+				getReward();
+			}
+		}
 	}
-	if (bigBean4 != NULL && collide(player, bigBean4)) {
-		bigBean4->removeFromParentAndCleanup(true);
-		bigBean4 = NULL;
-		becomeSuper();
-	}
-	/*if (move == MOVE::LEFT && player->getPosition().x > origin.x + player->getContentSize().width / 2) {
-		auto moveBy = MoveBy::create(0.1f, Vec2(-2, 0));
-		player->runAction(moveBy);
-	} else if (move == MOVE::RIGHT && player->getPosition().x < origin.x + visibleSize.width - player->getContentSize().width / 2) {
-		auto moveBy = MoveBy::create(0.1f, Vec2(2, 0));
-		player->runAction(moveBy);
-	} else if (move == MOVE::UP && player->getPosition().x < origin.x + visibleSize.width - player->getContentSize().width / 2) {
-		auto moveBy = MoveBy::create(0.1f, Vec2(0, 2));
-		player->runAction(moveBy);
-	} else if (move == MOVE::DOWN && player->getPosition().x < origin.x + visibleSize.width - player->getContentSize().width / 2) {
-		auto moveBy = MoveBy::create(0.1f, Vec2(0, -2));
-		player->runAction(moveBy);
-	}*/
-
-	for (auto bean = beans.begin(); bean != beans.end(); bean++) {
+	// 判断玩家是否吃到小豆子
+	for (vector<Sprite*>::iterator bean = beans.begin(); bean != beans.end(); bean++) {
 		if (collide(player, *bean)) {
-			removeChild(*bean, true);
+			 ++ Global::score;
+			(*bean)->removeFromParentAndCleanup(true);
 			beans.erase(bean);
-			//removeAllChildrenWithCleanup(true);
 			break;
 		}
 	}
-
+	// 更新记分板
+	char *score_str = new char[12];
+	sprintf(score_str, "score: %d", Global::score);
+	score_field->setString(score_str);
+	// 吃光所有的豆
 	if (beans.size() == 0)
-		toEndScene(NULL, true); // win
+		toEndScene(NULL, true); // 游戏胜利
 }
 
-void GameScene::monsterMove(float f) {
-
-	//TODO 完善代码
-
-	schedule(schedule_selector(GameScene::pinkMove), 0.01f, kRepeatForever, 0);
-	schedule(schedule_selector(GameScene::orangeMove), 1.0f, kRepeatForever, 0);
-	schedule(schedule_selector(GameScene::redMove), 0.01f, kRepeatForever, 0);
-	schedule(schedule_selector(GameScene::blueMove), 0.01f, kRepeatForever, 0);
+// 玩家获得所有怪兽静止三秒的奖励
+void GameScene::getReward() {
+	stillEnermys();		// 使怪物静止
+	darkenEnermys();	// 使怪物颜色
+	largenPlayer();		// 玩家大小变大
+	// 延迟3s后，怪物开始移动
+	auto func1 = CallFuncN::create(CC_CALLBACK_0(GameScene::recoverSprites, this));
+	auto func2 = CallFuncN::create(CC_CALLBACK_0(GameScene::enemyMove, this));
+	auto seq = Sequence::create(DelayTime::create(3.0f), func1, func2, NULL);
+	this->runAction(seq);
 }
 
-void GameScene::redMove(float f) {
+// 把玩家变大一倍
+void GameScene::largenPlayer() {
+	player->setScale(2);
+}
 
-	//TODO 完善代码
+// 取消怪物移动的调度器，让所有怪物静止
+void GameScene::stillEnermys() {
+	for (int i = 0; i < 4; i++) {
+		if (enemys[i] != NULL) {
+			enemys[i]->stopAllActions();	// 停止怪物的所有动作
+		}
+	}
+	// 取消所有怪物的调度器
+	unschedule(schedule_selector(GameScene::pinkEnemyMove));
+	unschedule(schedule_selector(GameScene::blueEnemyMove));
+	unschedule(schedule_selector(GameScene::orangeEnemyMove));
+	unschedule(schedule_selector(GameScene::redEnemyMove));
+}
 
-	if (issupered) return;
-	if (enemyRed == NULL) return;
-	if (collide(enemyOrange, wall) && t_f) {
-		t_f = false;
-		enemyOrange->stopAllActions();
-		o_x = -o_x, o_y = -o_y;
-		if (num) {
-			if (o_x < 0) {
-				enemyOrange->setFlipY(false);
-				enemyOrange->setRotation(90);
-			} else {
-				enemyOrange->setFlipY(false);
-				enemyOrange->setRotation(-90);
+// 所有怪物颜色变深（将深色怪物图片覆盖在怪物上面）
+void GameScene::darkenEnermys() {
+	for (int i = 0; i < 4; i++) {
+		if (enemys[i] != NULL && darkEnermys[i] == NULL) {
+			darkEnermys[i] = Sprite::create("sprites/sprite1.png");
+			darkEnermys[i]->setPosition(enemys[i]->getPosition());
+			this->addChild(darkEnermys[i], 1);
+			auto animation = Animation::create();
+			for (int i = 1; i < 5; i++) {
+				char nameSize[100] = { 0 };
+				sprintf(nameSize, "sprites/sprite%d.png", i);
+				animation->addSpriteFrameWithFile(nameSize);
 			}
-			auto move = MoveBy::create(0.2, Vec2(o_x, 0));
-			enemyOrange->runAction(move);
-		} else {
-			if (o_y > 0) {
-				enemyOrange->setRotation(0);
-				enemyOrange->setFlipY(true);
-			} else {
-				enemyOrange->setRotation(0);
-				enemyOrange->setFlipY(false);
-			}
-			auto move = MoveBy::create(0.2, Vec2(0, o_y));
-			enemyOrange->runAction(move);
-		}
-	}
-	if (enemyRed->getPositionX() > player->getPositionX() + 10) {
-		if (true) {
-			enemyRed->setFlipX(false);
-			enemyRed->setRotation(0);
-			enemyRed->setPositionX(enemyRed->getPositionX() - 1);
-		}
-	} else if (enemyRed->getPositionX() < player->getPositionX() - 10) {
-		if (true) {
-			enemyRed->setFlipX(true);
-			enemyRed->setRotation(0);
-			enemyRed->setPositionX(enemyRed->getPositionX() + 1);
-		}
-	} else if (enemyRed->getPositionY() < player->getPositionY()) {
-		if (true) {
-			enemyRed->setFlipX(false);
-			enemyRed->setRotation(90);
-			enemyRed->setPositionY(enemyRed->getPositionY() + 1);
-		}
-	} else if (enemyRed->getPositionY() > player->getPositionY()) {
-		if (true) {
-			enemyRed->setFlipX(false);
-			enemyRed->setRotation(-90);
-			enemyRed->setPositionY(enemyRed->getPositionY() - 1);
+			animation->setDelayPerUnit(0.1f);
+			animation->setLoops(-1);
+			auto animate = Animate::create(animation);
+			darkEnermys[i]->runAction(animate);	
 		}
 	}
 }
 
-void GameScene::orangeMove(float f) {
-
-	//TODO 完善代码
-
-	if (enemyOrange == NULL) return;
-	if (issupered) return;
-	t_f = true;
-	o_x = -100 + rand() % 200, o_y = -100 + rand() % 200, num = rand() % 2;
-	if (num) {
-		if (o_x < 0) {
-			enemyOrange->setFlipY(false);
-			enemyOrange->setRotation(90);
-		} else {
-			enemyOrange->setFlipY(false);
-			enemyOrange->setRotation(-90);
-		}
-		auto move = MoveBy::create(1, Vec2(o_x, 0));
-		enemyOrange->runAction(move);
-	} else {
-		if (o_y > 0) {
-			enemyOrange->setRotation(0);
-			enemyOrange->setFlipY(true);
-		} else {
-			enemyOrange->setRotation(0);
-			enemyOrange->setFlipY(false);
-		}
-		auto move = MoveBy::create(1, Vec2(0, o_y));
-		enemyOrange->runAction(move);
-	}
+// 恢复怪物和玩家
+void GameScene::recoverSprites() {
+	recoverEnermys();
+	playerRecover();
 }
 
-void GameScene::pinkMove(float f) {
-
-	//TODO 完善代码
-
-	if (enemyPink == NULL) return;
-	if (issupered) return;
-	int x, y;
-	if (MOVE::RIGHT) {
-		x = player->getPositionX() + 30;
-		y = player->getPositionY();
-	} else if (MOVE::DOWN) {
-		x = player->getPositionX();
-		y = player->getPositionY() - 30;
-	} else if (MOVE::UP) {
-		x = player->getPositionX();
-		y = player->getPositionY() + 30;
-	} else if (MOVE::LEFT) {
-		x = player->getPositionX() - 30;
-		y = player->getPositionY();
-	}
-
-	int pinkX = enemyPink->getPositionX(), pinkY = enemyPink->getPositionY();
-	if (pinkX > x + 10) {
-		enemyPink->setFlipX(true);
-		enemyPink->setRotation(0);
-		enemyPink->setPositionX(pinkX - 1);
-	} else if (pinkX < x - 10) {
-		enemyPink->setFlipX(false);
-		enemyPink->setRotation(0);
-		enemyPink->setPositionX(pinkX + 1);
-	} else if (pinkY > y) {
-		enemyPink->setFlipX(false);
-		enemyPink->setRotation(90);
-		enemyPink->setPositionY(pinkY - 1);
-	} else if (pinkY < y) {
-		enemyPink->setFlipX(false);
-		enemyPink->setRotation(-90);
-		enemyPink->setPositionY(pinkY + 1);
-	}
-}
-
-void GameScene::blueMove(float f) {
-
-	//TODO 完善代码
-
-	if (enemyBlue == NULL) return;
-	if (issupered) return;
-	if (enemyBlue->getPositionX() > player->getPositionX() + 10) {
-		if (true) {
-			enemyBlue->setFlipY(false);
-			enemyBlue->setRotation(90);
-			enemyBlue->setPositionX(enemyBlue->getPositionX() - 1);
-		}
-	} else if (enemyBlue->getPositionX() < player->getPositionX() - 10) {
-		if (true) {
-			enemyBlue->setFlipY(false);
-			enemyBlue->setRotation(-90);
-			enemyBlue->setPositionX(enemyBlue->getPositionX() + 1);
-		}
-	} else if (enemyBlue->getPositionY() < player->getPositionY()) {
-		if (true) {
-			enemyBlue->setFlipY(true);
-			enemyBlue->setRotation(0);
-			enemyBlue->setPositionY(enemyBlue->getPositionY() + 1);
-		}
-	} else if (enemyBlue->getPositionY() > player->getPositionY()) {
-		if (true) {
-			enemyBlue->setFlipY(false);
-			enemyBlue->setRotation(0);
-			enemyBlue->setPositionY(enemyBlue->getPositionY() - 1);
+// 怪物颜色恢复正常
+void GameScene::recoverEnermys() {
+	isRewarded = false;
+	for (int i = 0; i < 4; i++) {
+		if (enemys[i] != NULL && darkEnermys[i] != NULL) {
+			darkEnermys[i]->removeFromParentAndCleanup(true);
+			darkEnermys[i] = NULL;
 		}
 	}
 }
 
+// 玩家恢复正常大小
+void GameScene::playerRecover() {
+	player->setScale(1);
+}
+
+// 精灵之间的碰撞
 bool GameScene::collide(Sprite *s1, Sprite *s2) {
-
-	//TODO 完善代码
-
-	if (s2 == NULL) return false;
-	if (CCCircle(CCPoint(Vec2(s2->getPosition().x, s2->getPosition().y)), s2->getContentSize().width / 2 - 10).intersectsCircle(CCCircle(CCPoint(Vec2(s1->getPosition().x,
-		s1->getPosition().y)), s1->getContentSize().height / 2 - 10)))
-		return true;
-	return false;
+	if (s2 == NULL || s1 == NULL) {
+		return false;
+	}
+	if (!isRewarded) {
+		if (CCCircle(CCPoint(Vec2(s2->getPosition().x, s2->getPosition().y)), s2->getContentSize().width / 2 - 5).intersectsCircle(CCCircle(CCPoint(Vec2(s1->getPosition().x,
+			s1->getPosition().y)), s1->getContentSize().height / 2 - 5)))
+			return true;
+		return false;
+	}
+	else {
+		if (CCCircle(CCPoint(Vec2(s2->getPosition().x, s2->getPosition().y)), s2->getContentSize().width / 2 + 5).intersectsCircle(CCCircle(CCPoint(Vec2(s1->getPosition().x,
+			s1->getPosition().y)), s1->getContentSize().height / 2 + 5)))
+			return true;
+		return false;
+	}
 }
 
+// 精灵与墙
 bool GameScene::collide(Sprite *s1, TMXObjectGroup *w) {
-
-	//TODO 完善代码
-
 	auto container = w->getObjects();
-
 	for (auto obj : container) {
 		ValueMap values = obj.asValueMap();
 		int x = values.at("x").asInt();
 		int y = values.at("y").asInt();
 		int width = values.at("width").asInt();
 		int height = values.at("height").asInt();
-		if (Rect(p_x - width / 2 + x, p_y - height / 2 + y, width, height).intersectsCircle(Vec2(s1->getPosition().x,
-			s1->getPosition().y), s1->getContentSize().height / 2 - 4)) {
+		if (Rect(map_x + x, map_y + y, width, height).intersectsCircle(Vec2(s1->getPosition().x,
+			s1->getPosition().y), s1->getContentSize().height / 2 - 3)) {
 			return true;
 		}
 	}
-
 	return false;
 }
 
-void GameScene::becomeSuper() {
-
-	//TODO 完善代码
-
-	issupered = true;
-	float x, y;
-	if (enemyBlue != NULL) {
-		float x = enemyBlue->getPositionX(), y = enemyBlue->getPositionY();
-		enemyBlue->removeFromParentAndCleanup(true);
-		enemyBlue = Sprite::create("sprites/sprite_1.png");
-		enemyBlue->setPosition(x, y);
-		addChild(enemyBlue, 1);
-	}
-	if (enemyRed != NULL) {
-		x = enemyRed->getPositionX(), y = enemyRed->getPositionY();
-		enemyRed->removeFromParentAndCleanup(true);
-		enemyRed = Sprite::create("sprites/sprite_1.png");
-		enemyRed->setPosition(x, y);
-		addChild(enemyRed, 1);
-	}
-	if (enemyOrange != NULL) {
-		x = enemyOrange->getPositionX(), y = enemyOrange->getPositionY();
-		enemyOrange->removeFromParentAndCleanup(true);
-		enemyOrange = Sprite::create("sprites/sprite_1.png");
-		enemyOrange->setPosition(x, y);
-		addChild(enemyOrange, 1);
-	}
-	if (enemyPink != NULL) {
-		x = enemyPink->getPositionX(), y = enemyPink->getPositionY();
-		enemyPink->removeFromParentAndCleanup(true);
-		enemyPink = Sprite::create("sprites/sprite_1.png");
-		enemyPink->setPosition(x, y);
-		addChild(enemyPink, 1);
-	}
-	schedule(schedule_selector(GameScene::becomenormal), 0, 0, 3);
-}
-
-void GameScene::becomenormal(float f) {
-
-	//TODO 完善代码
-
-	float x, y;
-	issupered = false;
-	if (enemyBlue != NULL) {
-		float x = enemyBlue->getPositionX(), y = enemyBlue->getPositionY();
-		enemyBlue->removeFromParentAndCleanup(true);
-
-		enemyBlue = Sprite::create("sprite/blue1.png");
-		enemyBlue->setPosition(x, y);
-		this->addChild(enemyBlue, 1);
-		auto blueAnimation = Animation::create();
-		for (int i = 1; i < 3; i++) {
-			char nameSize[100] = { 0 };
-			sprintf(nameSize, "sprites/Blue%d.png", i);
-			blueAnimation->addSpriteFrameWithFile(nameSize);
-		}
-		blueAnimation->setDelayPerUnit(0.1f);
-		blueAnimation->setLoops(-1);
-		auto blueAnimate = Animate::create(blueAnimation);
-		enemyBlue->runAction(blueAnimate);
-	}
-	if (enemyOrange != NULL) {
-		x = enemyOrange->getPositionX(), y = enemyOrange->getPositionY();
-		enemyOrange->removeFromParentAndCleanup(true);
-		enemyOrange = Sprite::create("sprite/orange1.png");
-		enemyOrange->setPosition(x, y);
-		this->addChild(enemyOrange, 1);
-
-		auto orangeAnimation = Animation::create();
-		for (int i = 1; i < 3; i++) {
-			char nameSize[100] = { 0 };
-			sprintf(nameSize, "sprites/Orange%d.png", i);
-			orangeAnimation->addSpriteFrameWithFile(nameSize);
-		}
-		orangeAnimation->setDelayPerUnit(0.1f);
-		orangeAnimation->setLoops(-1);
-		auto orangeAnimate = Animate::create(orangeAnimation);
-		enemyOrange->runAction(orangeAnimate);
-	}
-	if (enemyPink != NULL) {
-		x = enemyPink->getPositionX(), y = enemyPink->getPositionY();
-		enemyPink->removeFromParentAndCleanup(true);
-		enemyPink = Sprite::create("sprite/pink1.png");
-		enemyPink->setPosition(x, y);
-		this->addChild(enemyPink, 1);
-
-		auto pinkAnimation = Animation::create();
-		for (int i = 1; i < 3; i++) {
-			char nameSize[100] = { 0 };
-			sprintf(nameSize, "sprites/Pink%d.png", i);
-			pinkAnimation->addSpriteFrameWithFile(nameSize);
-		}
-		pinkAnimation->setDelayPerUnit(0.1f);
-		pinkAnimation->setLoops(-1);
-		auto pinkAnimate = Animate::create(pinkAnimation);
-		enemyPink->runAction(pinkAnimate);
-	}
-	if (enemyRed != NULL) {
-		x = enemyRed->getPositionX(), y = enemyRed->getPositionY();
-		enemyRed->removeFromParentAndCleanup(true);
-		enemyRed = Sprite::create("sprite/red1.png");
-		enemyRed->setPosition(x, y);
-		this->addChild(enemyRed, 1);
-
-		auto redAnimation = Animation::create();
-		for (int i = 1; i < 3; i++) {
-			char nameSize[100] = { 0 };
-			sprintf(nameSize, "sprites/Red%d.png", i);
-			redAnimation->addSpriteFrameWithFile(nameSize);
-		}
-		redAnimation->setDelayPerUnit(0.1f);
-		redAnimation->setLoops(-1);
-		auto redAnimate = Animate::create(redAnimation);
-		enemyRed->runAction(redAnimate);
-	}
-}
 
 // 跳转到结算界面
 void GameScene::toEndScene(cocos2d::Ref *pSender, bool isWin) {
+	unscheduleAll();
+	SimpleAudioEngine::sharedEngine()->stopBackgroundMusic();
 	if (isWin) {
-		Global::status = "You Win";
-	} else {
-		Global::status = "You Lose";
+		SimpleAudioEngine::getInstance()->playEffect("music/win.wav", false);
 	}
-	submitEvent();
+	else {
+		SimpleAudioEngine::getInstance()->playEffect("music/gameover.mp3", false);
+	}
+	auto scene = EndScene::createScene();
+	Director::getInstance()->replaceScene(TransitionFade::create(0.5, scene, Color3B(0, 0, 0)));
 }
 
-// 提交成绩事件函数
-void GameScene::submitEvent() {
+// 页面跳转取消所有调度器
+void GameScene::unscheduleAll() {
+	// 取消update调度器
+	unschedule(schedule_selector(GameScene::update));
+	// 取消所有怪物的调度器
+	unschedule(schedule_selector(GameScene::pinkEnemyMove));
+	unschedule(schedule_selector(GameScene::blueEnemyMove));
+	unschedule(schedule_selector(GameScene::orangeEnemyMove));
+	unschedule(schedule_selector(GameScene::redEnemyMove));
+}
 
+void GameScene::submitEvent() {
 	if (Global::score > Global::maxscore) {
 		HttpRequest* request = new HttpRequest();
 		request->setUrl((string() + "http://" + Global::ip + ":11900/submit").c_str());
@@ -762,8 +617,9 @@ void GameScene::submitEvent() {
 
 		cocos2d::network::HttpClient::getInstance()->send(request);
 		request->release();
-	} else {
-		CCLOG("不够高啊");
+	}
+	else {
+		unscheduleAll();
 		auto endScene = EndScene::createScene();
 		Director::getInstance()->replaceScene(endScene);
 	}
@@ -779,13 +635,16 @@ void GameScene::onSubmitHttpCompleted(HttpClient *sender, HttpResponse* response
 		log("error buffer: %s", response->getErrorBuffer());
 		return;
 	}
-
+	unscheduleAll();
 	auto endScene = EndScene::createScene();
 	Director::getInstance()->replaceScene(endScene);
 }
 
-// 退出点击事件
-void GameScene::quitEvent() {
+
+// 退出点击事件（退到选择界面）
+void GameScene::quitEvent(cocos2d::Ref* pSender) {
+	unscheduleAll();
+	SimpleAudioEngine::sharedEngine()->stopBackgroundMusic();
 	auto selectScene = SelectScene::createScene();
 	Director::getInstance()->replaceScene(selectScene);
 }
