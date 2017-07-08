@@ -41,24 +41,31 @@ bool SelectScene::init() {
 	visibleHeight = visibleSize.height;
 	visibleWidth = visibleSize.width;
 
+	auto bg = Sprite::create("t.jpg");
+	bg->setPosition(Vec2(visibleSize.width / 2 + origin.x, visibleSize.height / 2 + origin.y));
+	this->addChild(bg, 0);
+
 	auto gameButton = Button::create();
 	gameButton->setTitleText("Start Game");
 	gameButton->setTitleFontSize(30);
-	gameButton->setPosition(Size(visibleWidth / 2, visibleHeight / 4 * 3));
+	gameButton->setTitleFontName("fonts/Marker Felt.TTF");
+	gameButton->setPosition(Size(visibleWidth / 2, visibleHeight / 5 * 3));
 	gameButton->addClickEventListener(CC_CALLBACK_0(SelectScene::toGameScene, this));
 	this->addChild(gameButton, 2);
 
 	auto rankButton = Button::create();
 	rankButton->setTitleText("Rank");
 	rankButton->setTitleFontSize(30);
-	rankButton->setPosition(Size(visibleWidth / 2, visibleHeight / 4 * 2));
+	rankButton->setTitleFontName("fonts/Marker Felt.TTF");
+	rankButton->setPosition(Size(visibleWidth / 2, visibleHeight / 5 * 2));
 	rankButton->addClickEventListener(CC_CALLBACK_0(SelectScene::toRankScene, this));
 	this->addChild(rankButton, 2);
 
 	auto logoutButton = Button::create();
 	logoutButton->setTitleText("Logout");
 	logoutButton->setTitleFontSize(30);
-	logoutButton->setPosition(Size(visibleWidth / 2, visibleHeight / 4));
+	logoutButton->setTitleFontName("fonts/Marker Felt.TTF");
+	logoutButton->setPosition(Size(visibleWidth / 2, visibleHeight / 5));
 	logoutButton->addClickEventListener(CC_CALLBACK_0(SelectScene::logout, this));
 	this->addChild(logoutButton, 2);
 

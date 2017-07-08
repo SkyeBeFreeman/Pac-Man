@@ -41,14 +41,18 @@ bool EndScene::init() {
 	visibleHeight = visibleSize.height;
 	visibleWidth = visibleSize.width;
 
-	auto label = Label::createWithTTF(Global::status, "fonts/Marker Felt.TTF", 40);
+	auto bg = Sprite::create("end.jpg");
+	bg->setPosition(Vec2(visibleSize.width / 2 + origin.x, visibleSize.height / 2 + origin.y));
+	this->addChild(bg, 0);
 
-	label->setPosition(Vec2(origin.x + visibleSize.width / 2,
-		origin.y + visibleSize.height - 2 * label->getContentSize().height));
+	auto label = Label::createWithTTF(Global::status, "fonts/Marker Felt.TTF", 60);
+	label->setColor(ccc3(140, 100, 80));
+	label->setPosition(Vec2(origin.x + visibleSize.width / 2,visibleSize.height / 2 + 80));
 
 	this->addChild(label, 1);
 
 	username_field = TextField::create(Global::username, "fonts/Marker Felt.TTF", 30);
+	username_field->setColor(ccc3(180, 130, 120));
 	username_field->setPosition(Size(visibleWidth / 2, visibleHeight / 2));
 	this->addChild(username_field, 2);
 
@@ -58,6 +62,7 @@ bool EndScene::init() {
 	ss >> temp;
 
 	score_field = TextField::create(temp, "fonts/Marker Felt.TTF", 30);
+	score_field->setColor(ccc3(180, 130, 120));
 	score_field->setPosition(Size(visibleWidth / 2, visibleHeight / 5 * 2));
 	this->addChild(score_field, 2);
 
