@@ -581,6 +581,7 @@ void GameScene::toEndScene(cocos2d::Ref *pSender, bool isWin) {
 		SimpleAudioEngine::getInstance()->playEffect("music/gameover.mp3", false);
 		Global::status = "You Fail !";
 	}
+	submitEvent();
 	auto scene = EndScene::createScene();
 	Director::getInstance()->replaceScene(TransitionFade::create(0.5, scene, Color3B(0, 0, 0)));
 }
