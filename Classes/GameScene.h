@@ -61,6 +61,7 @@ public:
 
 	// 跳转到结算页面
 	void toEndScene(cocos2d::Ref *pSender, bool isWin);
+	void unscheduleAll();					// 取消所有调度器
 	void quitEvent(cocos2d::Ref* pSender);
 	void submitEvent();
 	void onSubmitHttpCompleted(HttpClient *sender, HttpResponse* response);

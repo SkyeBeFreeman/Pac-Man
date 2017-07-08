@@ -482,7 +482,7 @@ void GameScene::stillEnermys() {
 			enemys[i]->stopAllActions();	// 停止怪物的所有动作
 		}
 	}
-	// 取消所有调度器
+	// 取消所有怪物的调度器
 	unschedule(schedule_selector(GameScene::pinkEnemyMove));
 	unschedule(schedule_selector(GameScene::blueEnemyMove));
 	unschedule(schedule_selector(GameScene::orangeEnemyMove));
@@ -571,6 +571,7 @@ bool GameScene::collide(Sprite *s1, TMXObjectGroup *w) {
 
 // 跳转到结算界面
 void GameScene::toEndScene(cocos2d::Ref *pSender, bool isWin) {
+	unscheduleAll();
 	SimpleAudioEngine::sharedEngine()->stopBackgroundMusic();
 	if (isWin) {
 		SimpleAudioEngine::getInstance()->playEffect("music/win.wav", false);
@@ -582,32 +583,43 @@ void GameScene::toEndScene(cocos2d::Ref *pSender, bool isWin) {
 	Director::getInstance()->replaceScene(TransitionFade::create(0.5, scene, Color3B(0, 0, 0)));
 }
 
+// 页面跳转取消所有调度器
+void GameScene::unscheduleAll() {
+	// 取消update调度器
+	unschedule(schedule_selector(GameScene::update));
+	// 取消所有怪物的调度器
+	unschedule(schedule_selector(GameScene::pinkEnemyMove));
+	unschedule(schedule_selector(GameScene::blueEnemyMove));
+	unschedule(schedule_selector(GameScene::orangeEnemyMove));
+	unschedule(schedule_selector(GameScene::redEnemyMove));
+}
 
 void GameScene::submitEvent() {
 	if (Global::score > Global::maxscore) {
-		//HttpRequest* request = new HttpRequest();
-		//request->setUrl((string() + "http://" + Global::ip + ":11900/submit").c_str());
-		//request->setRequestType(HttpRequest::Type::POST);
-		//request->setResponseCallback(CC_CALLBACK_2(GameScene::onSubmitHttpCompleted, this));
+		HttpRequest* request = new HttpRequest();
+		request->setUrl((string() + "http://" + Global::ip + ":11900/submit").c_str());
+		request->setRequestType(HttpRequest::Type::POST);
+		request->setResponseCallback(CC_CALLBACK_2(GameScene::onSubmitHttpCompleted, this));
 
-		//std::stringstream ss;
-		//ss << Global::score;
-		//string temp;
-		//ss >> temp;
+		std::stringstream ss;
+		ss << Global::score;
+		string temp;
+		ss >> temp;
 
-		//// 写入POST请求数据
-		//string tmp = "username=" + Global::username + "&score=" + temp;
-		//const char* postData = tmp.c_str();
-		//request->setRequestData(postData, strlen(postData));
-		//request->setTag("POST test");
+		// 写入POST请求数据
+		string tmp = "username=" + Global::username + "&score=" + temp;
+		const char* postData = tmp.c_str();
+		request->setRequestData(postData, strlen(postData));
+		request->setTag("POST test");
 
-		//Global::maxscore = Global::score;
-		//database->setIntegerForKey("maxscore", Global::maxscore);
+		Global::maxscore = Global::score;
+		database->setIntegerForKey("maxscore", Global::maxscore);
 
-		//cocos2d::network::HttpClient::getInstance()->send(request);
-		//request->release();
+		cocos2d::network::HttpClient::getInstance()->send(request);
+		request->release();
 	}
 	else {
+		unscheduleAll();
 		auto endScene = EndScene::createScene();
 		Director::getInstance()->replaceScene(endScene);
 	}
@@ -623,6 +635,7 @@ void GameScene::onSubmitHttpCompleted(HttpClient *sender, HttpResponse* response
 		log("error buffer: %s", response->getErrorBuffer());
 		return;
 	}
+	unscheduleAll();
 	auto endScene = EndScene::createScene();
 	Director::getInstance()->replaceScene(endScene);
 }
@@ -630,6 +643,7 @@ void GameScene::onSubmitHttpCompleted(HttpClient *sender, HttpResponse* response
 
 // 退出点击事件（退到选择界面）
 void GameScene::quitEvent(cocos2d::Ref* pSender) {
+	unscheduleAll();
 	SimpleAudioEngine::sharedEngine()->stopBackgroundMusic();
 	auto selectScene = SelectScene::createScene();
 	Director::getInstance()->replaceScene(selectScene);
