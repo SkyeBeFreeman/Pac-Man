@@ -53,16 +53,53 @@ bool LoginScene::init() {
 	bg->setPosition(Vec2(size.width / 2 + origin.x, size.height / 2 + origin.y));
 	this->addChild(bg, 0);
 
-	usernameField = TextField::create("Player Name", "Arial", 30);
-	usernameField->setColor(ccc3(150, 100, 80));
+	usernameField = TextField::create("Player     Name", "Arial", 20);
+	//usernameField->setColor(ccc3(150, 100, 80));
+	usernameField->setColor(ccc3(250, 250, 250));
 	usernameField->setPosition(Size(visibleWidth / 2, visibleHeight / 8 * 6));
+	
 	this->addChild(usernameField, 2);
+	// -------
+	auto borderUp = Sprite::create("border1.png");
+	borderUp->setPosition(Vec2(visibleWidth / 2, visibleHeight / 8 * 6 + 13));
+	this->addChild(borderUp, 2);
+	auto borderDown = Sprite::create("border1.png");
+	borderDown->setPosition(Vec2(visibleWidth / 2, visibleHeight / 8 * 6 - 17));
+	this->addChild(borderDown, 2);
+	auto borderL = Sprite::create("border2.png");
+	borderL->setPosition(Vec2(visibleWidth / 2 - 86, visibleHeight / 8 * 6 - 2 ));
+	this->addChild(borderL, 2);
+	auto borderR = Sprite::create("border2.png");
+	borderR->setPosition(Vec2(visibleWidth / 2 + 86, visibleHeight / 8 * 6 - 2));
+	this->addChild(borderR, 2);
 
-	passwordField = TextField::create("Player Password", "Arial", 30);
-	passwordField->setColor(ccc3(150, 100, 80));
+	auto label = Label::createWithTTF("Name", "fonts/Arial.ttf", 30);
+	label->setPosition(Vec2(visibleWidth / 2 - 130, visibleHeight / 8 * 6));
+	this->addChild(label, 2);
+	//--------
+	passwordField = TextField::create("Player Password", "Arial", 20);
+	passwordField->setColor(ccc3(250, 250, 250));
 	passwordField->setPosition(Size(visibleWidth / 2, visibleHeight / 8 * 5));
 	this->addChild(passwordField, 2);
 
+	auto borderUp2 = Sprite::create("border1.png");
+	borderUp2->setPosition(Vec2(visibleWidth / 2, visibleHeight / 8 * 5 + 13));
+	this->addChild(borderUp2, 2);
+	auto borderDown2 = Sprite::create("border1.png");
+	borderDown2->setPosition(Vec2(visibleWidth / 2, visibleHeight / 8 * 5 - 17));
+	this->addChild(borderDown2, 2);
+	auto borderL2 = Sprite::create("border2.png");
+	borderL2->setPosition(Vec2(visibleWidth / 2 - 86, visibleHeight / 8 * 5 - 2));
+	this->addChild(borderL2, 2);
+	auto borderR2 = Sprite::create("border2.png");
+	borderR2->setPosition(Vec2(visibleWidth / 2 + 86, visibleHeight / 8 * 5 - 2));
+	this->addChild(borderR2, 2);
+
+	//----
+	auto label2 = Label::createWithTTF("PassWord", "fonts/Arial.ttf", 20);
+	label2->setPosition(Vec2(visibleWidth / 2 - 135, visibleHeight / 8 * 5));
+	this->addChild(label2, 2);
+	//----
 	errorField = TextField::create("", "Arial", 18);
 	errorField->setColor(ccc3(150, 100, 80));
 	errorField->setPosition(Size(visibleWidth / 2, visibleHeight / 10 * 9));
