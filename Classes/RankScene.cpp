@@ -37,23 +37,28 @@ bool RankScene::init() {
 	}
 
 	Size size = Director::getInstance()->getVisibleSize();
+	Vec2 origin = Director::getInstance()->getVisibleOrigin();
 	visibleHeight = size.height;
 	visibleWidth = size.width;
 
-	username_field = TextField::create("", "Arial", 30);
+	auto bg = Sprite::create("rank.jpg");
+	bg->setPosition(Vec2(size.width / 2 + origin.x, size.height / 2 + origin.y));
+	this->addChild(bg, 0);
+
+	username_field = TextField::create("", "Arial", 25);
 	username_field->setPosition(Size(visibleWidth / 2, visibleHeight / 10 * 9));
 	this->addChild(username_field, 2);
 
-	score_field = TextField::create("", "Arial", 30);
+	score_field = TextField::create("", "Arial", 25);
 	score_field->setPosition(Size(visibleWidth / 2, visibleHeight / 10 * 8));
 	this->addChild(score_field, 2);
 
-	ranking_field = TextField::create("", "Arial", 30);
+	ranking_field = TextField::create("", "Arial", 25);
 	ranking_field->setPosition(Size(visibleWidth / 2, visibleHeight / 10 * 7));
 	this->addChild(ranking_field, 2);
 
-	rank_field = TextField::create("", "Arial", 30);
-	rank_field->setPosition(Size(visibleWidth / 2, visibleHeight / 10 * 3));
+	rank_field = TextField::create("", "Arial", 20);
+	rank_field->setPosition(Size(visibleWidth / 2, visibleHeight / 10 * 3.5));
 	this->addChild(rank_field, 2);
 
 	auto quitButton = Button::create();

@@ -95,7 +95,7 @@ void GameScene::addMap() {
 		origin.y + visibleSize.height - label->getContentSize().height));
 	this->addChild(label, 1);
 
-	map = TMXTiledMap::create("wallMap1.tmx");
+	map = TMXTiledMap::create("map.tmx");
 	map->setPosition(visibleSize.width / 2 + origin.x, visibleSize.height / 2 + origin.y);
 	map->setAnchorPoint(Vec2(0.5, 0.5));
 	map->setScale(640 / map->getContentSize().width);
@@ -575,9 +575,11 @@ void GameScene::toEndScene(cocos2d::Ref *pSender, bool isWin) {
 	SimpleAudioEngine::sharedEngine()->stopBackgroundMusic();
 	if (isWin) {
 		SimpleAudioEngine::getInstance()->playEffect("music/win.wav", false);
+		Global::status = "You Win !";
 	}
 	else {
 		SimpleAudioEngine::getInstance()->playEffect("music/gameover.mp3", false);
+		Global::status = "You Fail !";
 	}
 	auto scene = EndScene::createScene();
 	Director::getInstance()->replaceScene(TransitionFade::create(0.5, scene, Color3B(0, 0, 0)));

@@ -45,39 +45,50 @@ bool LoginScene::init() {
 	}
 
 	Size size = Director::getInstance()->getVisibleSize();
+	Vec2 origin = Director::getInstance()->getVisibleOrigin();
 	visibleHeight = size.height;
 	visibleWidth = size.width;
 
+	auto bg = Sprite::create("login.jpg");
+	bg->setPosition(Vec2(size.width / 2 + origin.x, size.height / 2 + origin.y));
+	this->addChild(bg, 0);
+
 	usernameField = TextField::create("Player Name", "Arial", 30);
-	usernameField->setPosition(Size(visibleWidth / 2, visibleHeight / 6 * 5));
+	usernameField->setColor(ccc3(150, 100, 80));
+	usernameField->setPosition(Size(visibleWidth / 2, visibleHeight / 8 * 6));
 	this->addChild(usernameField, 2);
 
 	passwordField = TextField::create("Player Password", "Arial", 30);
-	passwordField->setPosition(Size(visibleWidth / 2, visibleHeight / 6 * 4));
+	passwordField->setColor(ccc3(150, 100, 80));
+	passwordField->setPosition(Size(visibleWidth / 2, visibleHeight / 8 * 5));
 	this->addChild(passwordField, 2);
 
-	errorField = TextField::create("", "Arial", 20);
-	errorField->setPosition(Size(visibleWidth / 2, visibleHeight / 6 * 3));
+	errorField = TextField::create("", "Arial", 18);
+	errorField->setColor(ccc3(150, 100, 80));
+	errorField->setPosition(Size(visibleWidth / 2, visibleHeight / 10 * 9));
 	this->addChild(errorField, 2);
 
 	auto registButton = Button::create();
 	registButton->setTitleText("Regist");
 	registButton->setTitleFontSize(30);
-	registButton->setPosition(Size(visibleWidth / 5 * 2, visibleHeight / 6 * 2));
+	registButton->setTitleFontName("fonts/Marker Felt.TTF");
+	registButton->setPosition(Size(visibleWidth / 2, visibleHeight / 8 * 3));
 	registButton->addClickEventListener(CC_CALLBACK_0(LoginScene::registEvent, this));
 	this->addChild(registButton, 2);
 
 	auto loginButton = Button::create();
 	loginButton->setTitleText("Login");
 	loginButton->setTitleFontSize(30);
-	loginButton->setPosition(Size(visibleWidth / 5 * 3, visibleHeight / 6 * 2));
+	loginButton->setTitleFontName("fonts/Marker Felt.TTF");
+	loginButton->setPosition(Size(visibleWidth / 2, visibleHeight / 8 * 2));
 	loginButton->addClickEventListener(CC_CALLBACK_0(LoginScene::loginEvent, this));
 	this->addChild(loginButton, 2);
 
 	auto autoLoginButton = Button::create();
 	autoLoginButton->setTitleText("Login Automatically");
 	autoLoginButton->setTitleFontSize(30);
-	autoLoginButton->setPosition(Size(visibleWidth / 2, visibleHeight / 6));
+	autoLoginButton->setTitleFontName("fonts/Marker Felt.TTF");
+	autoLoginButton->setPosition(Size(visibleWidth / 2, visibleHeight / 8));
 	autoLoginButton->addClickEventListener(CC_CALLBACK_0(LoginScene::autoLoginEvent, this));
 	this->addChild(autoLoginButton, 2);
 
