@@ -10,6 +10,10 @@
 #include "SelectScene.h"
 #include "CCCircle.h"
 #include "EndScene.h"
+#include "SimpleAudioEngine.h"
+
+using namespace cocos2d;
+using namespace CocosDenshion;
 using std::regex;
 using std::match_results;
 using std::regex_match;
@@ -61,6 +65,8 @@ bool GameScene::init() {
 
 	isMove = false;
 	isRewarded = false;
+	preloadMusic();
+	playBgm();
 	addMap();
 	addBeans();
 	addPlayer();
@@ -69,6 +75,16 @@ bool GameScene::init() {
 	schedule(schedule_selector(GameScene::update), 0.04f, kRepeatForever, 0);
 	enemyMove();
 	return true;
+}
+
+void GameScene::preloadMusic() {
+	SimpleAudioEngine::sharedEngine()->preloadBackgroundMusic("music/bg3.wav");
+	SimpleAudioEngine::sharedEngine()->preloadBackgroundMusic("music/win.wav");
+	SimpleAudioEngine::sharedEngine()->preloadBackgroundMusic("music/gameover.mp3");
+}
+
+void GameScene::playBgm() {
+	SimpleAudioEngine::sharedEngine()->playBackgroundMusic("music/bg3.wav", true);
 }
 
 // 加载地图
@@ -103,12 +119,13 @@ void GameScene::addBeans() {
 		}
 	}
 	// 添加四个角上的大豆子
+	// 四个大豆子的坐标
 	Vec2 bigBeanLocations[4] = { 
 		Vec2(map_x + width / 10 * 1 + 70, map_y + height / 10 * 1 + 70),
 		Vec2(map_x + width / 10 * 1 + 70, map_y +height / 10 * 7 + 70),
 		Vec2(map_x + width / 10 * 7 + 70, map_y + height / 10 * 1 + 70),
 		Vec2(map_x + width / 10 * 7 + 70, map_y + height / 10 * 7 + 70) };
-
+	// 添加
 	for (int i = 0; i < 4; i++) {
 		bigBeans[i] = addBigBeans(bigBeanLocations[i]);
 	}
@@ -126,14 +143,14 @@ Sprite* GameScene::addBigBeans(Vec2 locaion) {
 void GameScene::addPlayer() {
 	TMXObjectGroup* objectGroup = map->getObjectGroup("elements");
 	ValueVector objects = objectGroup->getObjects();
-	player = Sprite::create("sprites/Player1.png");
+	player = Sprite::create("sprites/player1.png");
 	player->setPosition(Vec2(beans[27]->getPosition().x, beans[3]->getPosition().y));
 	this->addChild(player, 1);
 	// 加入动画
 	auto playerAnimation = Animation::create();
 	for (int i = 1; i < 3; i++) {
 		char nameSize[100] = { 0 };
-		sprintf(nameSize, "sprites/Player%d.png", i);
+		sprintf(nameSize, "sprites/player%d.png", i);
 		playerAnimation->addSpriteFrameWithFile(nameSize);
 	}
 	playerAnimation->setDelayPerUnit(0.1f);
@@ -158,7 +175,7 @@ Sprite *GameScene::addEnemyByColor(int color, Vec2 location) {
 	this->addChild(enemy, 1);
 
 	auto animation = Animation::create();
-	for (int i = 1; i < 3; i++) {
+	for (int i = 1; i < 5; i++) {
 		char nameSize[100] = { 0 };
 		sprintf(nameSize, ("sprites/" + enermy_color[color] + "%d.png").data(), i);
 		animation->addSpriteFrameWithFile(nameSize);
@@ -170,6 +187,7 @@ Sprite *GameScene::addEnemyByColor(int color, Vec2 location) {
 	return enemy;
 }
 
+// 键盘控制玩家移动
 void GameScene::movePlayer() {
 	switch (move)
 	{
@@ -280,7 +298,7 @@ void GameScene::redEnemyMove(float time) {
 	enemys[ENERMYCOLOR::RED]->runAction(moveBy);
 }
 
-//// update to new position of enemies
+// 添加键盘响应事件--四个方向+长按可直走
 void GameScene::addKeyboardListener() {
 	auto keyboardListener = EventListenerKeyboard::create();
 	keyboardListener->onKeyPressed = CC_CALLBACK_2(GameScene::onKeyPressed, this);
@@ -404,6 +422,8 @@ void GameScene::update(float f) {
 		for (int i = 0; i < 4; i++) {
 			if (enemys[i] != NULL && collide(player, enemys[i])) {
 				enemys[i]->removeFromParentAndCleanup(true);
+				darkEnermys[i]->removeFromParentAndCleanup(true);
+				darkEnermys[i] = NULL;
 				enemys[i] = NULL;
 			}
 		}
@@ -442,16 +462,21 @@ void GameScene::update(float f) {
 void GameScene::getReward() {
 	stillEnermys();		// 使怪物静止
 	darkenEnermys();	// 使怪物颜色
+	largenPlayer();		// 玩家大小变大
 	// 延迟3s后，怪物开始移动
-	auto func1 = CallFuncN::create(CC_CALLBACK_0(GameScene::recoverEnermys, this));
+	auto func1 = CallFuncN::create(CC_CALLBACK_0(GameScene::recoverSprites, this));
 	auto func2 = CallFuncN::create(CC_CALLBACK_0(GameScene::enemyMove, this));
 	auto seq = Sequence::create(DelayTime::create(3.0f), func1, func2, NULL);
 	this->runAction(seq);
 }
 
+// 把玩家变大一倍
+void GameScene::largenPlayer() {
+	player->setScale(2);
+}
+
 // 取消怪物移动的调度器，让所有怪物静止
 void GameScene::stillEnermys() {
-	isRewarded = false;
 	for (int i = 0; i < 4; i++) {
 		if (enemys[i] != NULL) {
 			enemys[i]->stopAllActions();	// 停止怪物的所有动作
@@ -468,15 +493,32 @@ void GameScene::stillEnermys() {
 void GameScene::darkenEnermys() {
 	for (int i = 0; i < 4; i++) {
 		if (enemys[i] != NULL && darkEnermys[i] == NULL) {
-			darkEnermys[i] = Sprite::create("sprites/sprite_1.png");
+			darkEnermys[i] = Sprite::create("sprites/sprite1.png");
 			darkEnermys[i]->setPosition(enemys[i]->getPosition());
-			addChild(darkEnermys[i], 1);
+			this->addChild(darkEnermys[i], 1);
+			auto animation = Animation::create();
+			for (int i = 1; i < 5; i++) {
+				char nameSize[100] = { 0 };
+				sprintf(nameSize, "sprites/sprite%d.png", i);
+				animation->addSpriteFrameWithFile(nameSize);
+			}
+			animation->setDelayPerUnit(0.1f);
+			animation->setLoops(-1);
+			auto animate = Animate::create(animation);
+			darkEnermys[i]->runAction(animate);	
 		}
 	}
 }
 
+// 恢复怪物和玩家
+void GameScene::recoverSprites() {
+	recoverEnermys();
+	playerRecover();
+}
+
 // 怪物颜色恢复正常
 void GameScene::recoverEnermys() {
+	isRewarded = false;
 	for (int i = 0; i < 4; i++) {
 		if (enemys[i] != NULL && darkEnermys[i] != NULL) {
 			darkEnermys[i]->removeFromParentAndCleanup(true);
@@ -485,14 +527,28 @@ void GameScene::recoverEnermys() {
 	}
 }
 
+// 玩家恢复正常大小
+void GameScene::playerRecover() {
+	player->setScale(1);
+}
+
+// 精灵之间的碰撞
 bool GameScene::collide(Sprite *s1, Sprite *s2) {
 	if (s2 == NULL || s1 == NULL) {
 		return false;
 	}
-	if (CCCircle(CCPoint(Vec2(s2->getPosition().x, s2->getPosition().y)), s2->getContentSize().width / 2 - 10).intersectsCircle(CCCircle(CCPoint(Vec2(s1->getPosition().x,
-		s1->getPosition().y)), s1->getContentSize().height / 2 - 10)))
-		return true;
-	return false;
+	if (!isRewarded) {
+		if (CCCircle(CCPoint(Vec2(s2->getPosition().x, s2->getPosition().y)), s2->getContentSize().width / 2 - 5).intersectsCircle(CCCircle(CCPoint(Vec2(s1->getPosition().x,
+			s1->getPosition().y)), s1->getContentSize().height / 2 - 5)))
+			return true;
+		return false;
+	}
+	else {
+		if (CCCircle(CCPoint(Vec2(s2->getPosition().x, s2->getPosition().y)), s2->getContentSize().width / 2 + 5).intersectsCircle(CCCircle(CCPoint(Vec2(s1->getPosition().x,
+			s1->getPosition().y)), s1->getContentSize().height / 2 + 5)))
+			return true;
+		return false;
+	}
 }
 
 // 精灵与墙
@@ -504,30 +560,30 @@ bool GameScene::collide(Sprite *s1, TMXObjectGroup *w) {
 		int y = values.at("y").asInt();
 		int width = values.at("width").asInt();
 		int height = values.at("height").asInt();
-		if (Rect(map_x - width / 2 + x, map_y - height / 2 + y, width, height).intersectsCircle(Vec2(s1->getPosition().x,
-			s1->getPosition().y), s1->getContentSize().height / 2 - 4)) {
+		if (Rect(map_x + x, map_y + y, width, height).intersectsCircle(Vec2(s1->getPosition().x,
+			s1->getPosition().y), s1->getContentSize().height / 2 - 3)) {
 			return true;
 		}
 	}
-
 	return false;
 }
 
 
 // 跳转到结算界面
 void GameScene::toEndScene(cocos2d::Ref *pSender, bool isWin) {
+	SimpleAudioEngine::sharedEngine()->stopBackgroundMusic();
 	if (isWin) {
-		CCLOG("You Win");
+		SimpleAudioEngine::getInstance()->playEffect("music/win.wav", false);
 	}
 	else {
-		CCLOG("You Lose");
+		SimpleAudioEngine::getInstance()->playEffect("music/gameover.mp3", false);
 	}
-	
+	auto scene = EndScene::createScene();
+	Director::getInstance()->replaceScene(TransitionFade::create(0.5, scene, Color3B(0, 0, 0)));
 }
 
 
 void GameScene::submitEvent() {
-
 	if (Global::score > Global::maxscore) {
 		//HttpRequest* request = new HttpRequest();
 		//request->setUrl((string() + "http://" + Global::ip + ":11900/submit").c_str());
@@ -552,7 +608,6 @@ void GameScene::submitEvent() {
 		//request->release();
 	}
 	else {
-		CCLOG("不够高啊");
 		auto endScene = EndScene::createScene();
 		Director::getInstance()->replaceScene(endScene);
 	}
@@ -568,7 +623,6 @@ void GameScene::onSubmitHttpCompleted(HttpClient *sender, HttpResponse* response
 		log("error buffer: %s", response->getErrorBuffer());
 		return;
 	}
-
 	auto endScene = EndScene::createScene();
 	Director::getInstance()->replaceScene(endScene);
 }
@@ -576,6 +630,7 @@ void GameScene::onSubmitHttpCompleted(HttpClient *sender, HttpResponse* response
 
 // 退出点击事件（退到选择界面）
 void GameScene::quitEvent(cocos2d::Ref* pSender) {
+	SimpleAudioEngine::sharedEngine()->stopBackgroundMusic();
 	auto selectScene = SelectScene::createScene();
 	Director::getInstance()->replaceScene(selectScene);
 }

@@ -31,6 +31,9 @@ public:
 	void addEnemy();						// 加入怪物
 	Sprite *addEnemyByColor(int color, Vec2 locaion);	// 加入不同颜色怪物
 
+	void preloadMusic();					// 加载音乐
+	void playBgm();							// 播放背景音乐
+
 	void movePlayer();						// 通过按键移动玩家
 	void enemyMove();						// 怪物移动----不同颜色的怪物移动方式不一样
 	void pinkEnemyMove(float time);			
@@ -45,14 +48,16 @@ public:
 	void getReward();		// 玩家获得所有怪物静止三秒的奖励
 	void stillEnermys();	// 怪物静止
 	void darkenEnermys();	// 所有怪物颜色变深
+	void largenPlayer();	// 把玩家变大一倍
+	void recoverSprites();	// 恢复所有精灵
 	void recoverEnermys();	// 怪物颜色恢复
+	void playerRecover();	// 玩家恢复正常大小
+	
 
 	bool collide(Sprite *s1, Sprite *s2);	// 精灵之间的碰撞
 	bool collide(Sprite *s1, TMXObjectGroup *w);	// 玩家和墙的碰撞
 
 	void update(float f);
-
-	//void menuCloseCallback(cocos2d::Ref *pSender);
 
 	// 跳转到结算页面
 	void toEndScene(cocos2d::Ref *pSender, bool isWin);
